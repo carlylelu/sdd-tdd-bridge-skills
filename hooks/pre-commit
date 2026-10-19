@@ -1,16 +1,4 @@
-#!/usr/bin/env bash
-set -euo pipefail
-
-repo_root=$(git rev-parse --show-toplevel 2>/dev/null) || {
-  echo '[BRIDGE-HOOK-001][BLOCK] 当前目录不是Git仓库' >&2
-  exit 2
-}
-
-checker="$repo_root/bridge/checks/openspec-format-check"
-if [[ ! -x "$checker" ]]; then
-  # 检查脚本不存在不阻塞提交（允许项目尚未初始化 bridge/checks/）
-  echo '[BRIDGE-HOOK][PASS] bridge/checks/openspec-format-check 不存在，跳过 OpenSpec 格式检查'
-  exit 0
-fi
-
-exec "$checker" --repo "$repo_root" --staged
+#!/usr/bin/env sh
+set -eu
+repo_root=$(git rev-parse --show-toplevel)
+exec node "$repo_root/bridge/checks/bridge.mjs" format --repo "$repo_root" --staged

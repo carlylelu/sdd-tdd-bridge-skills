@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "stage": "DUAL_VERIFY",
+  "change_id": "example-change",
+  "result": "BLOCKED",
+  "checked_at": null,
+  "fingerprint": null,
+  "evidence": [],
+  "issues": [],
+  "outputs": [],
+  "next_action": "Collect actual evidence before setting PASS",
+  "tasks": [],
+  "checks": {
+    "full_scenario_coverage": "NOT_RUN",
+    "effective_spec_compliance": "NOT_RUN",
+    "code_review": "NOT_RUN"
+  },
+  "openspec_verify": {
+    "result": "NOT_RUN",
+    "evidence": []
+  },
+  "verification": []
+}

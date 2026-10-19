@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "stage": "IMPLEMENT_TASK",
+  "change_id": "example-change",
+  "result": "BLOCKED",
+  "checked_at": null,
+  "fingerprint": null,
+  "evidence": [],
+  "issues": [],
+  "outputs": [],
+  "next_action": "Collect actual evidence before setting PASS",
+  "task_id": "1.1",
+  "scenario_ids": [],
+  "implementation_refs": [],
+  "test_refs": [],
+  "checks": {
+    "scenario_coverage": "NOT_RUN",
+    "design_compliance": "NOT_RUN",
+    "exclusion_scope": "NOT_RUN",
+    "regression": "NOT_RUN",
+    "code_review": "NOT_RUN"
+  }
+}

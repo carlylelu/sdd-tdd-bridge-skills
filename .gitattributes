@@ -1,0 +1,6 @@
+* text=auto
+checks/* text eol=lf
+hooks/* text eol=lf
+*.mjs text eol=lf
+*.js text eol=lf
+*.md text eol=lf

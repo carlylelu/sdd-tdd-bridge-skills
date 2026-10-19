@@ -14,3 +14,7 @@ Thumbs.db
 *.swp
 *.swo
 *~
+
+# Repository-local installation metadata (absolute previous-hook paths).
+bridge/install-state.json
+.bridge-hooks/

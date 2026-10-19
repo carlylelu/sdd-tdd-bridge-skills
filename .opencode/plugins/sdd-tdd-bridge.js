@@ -1,8 +1,7 @@
 /**
  * sdd-tdd-bridge plugin for OpenCode / CodeFree-O / CodeFree Space
  *
- * Registers the skills/ directory via config hook so OpenCode discovers
- * all 4 bridge stage skills automatically — no symlinks needed.
+ * Registers skills and a primary agent via the config hook.
  *
  * The 4 skills form the OpenSpec-Superpowers bridge pipeline:
  *   bridge-load-context-skill → bridge-planning-skill
@@ -12,16 +11,20 @@
  * Main Agent (agents/bridge_agent.md) orchestrates stage routing;
  * deterministic checks (checks/) validate OpenSpec artifact format;
  * Git Hooks (hooks/) enforce commit message format.
- * Dual verification (OpenSpec verify + Superpowers verification) is a hard gate before archive.
+ * The agent invokes ready before archive; this plugin cannot intercept other archive entry points.
  */
 
 import path from 'path';
+import fs from 'node:fs/promises';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-export const SddTddBridgePlugin = async ({ client, directory }) => {
+export const SddTddBridgePlugin = async () => {
   const skillsDir = path.resolve(__dirname, '../../skills');
+  const agent = await fs.readFile(path.resolve(__dirname, '../../agents/bridge_agent.md'), 'utf8');
+  const contract = await fs.readFile(path.join(skillsDir, 'bridge-load-context-skill/references/workflow.md'), 'utf8');
+  const prompt = agent.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, '') + '\n\n' + contract;
 
   return {
     config: async (config) => {
@@ -30,6 +33,13 @@ export const SddTddBridgePlugin = async ({ client, directory }) => {
       if (!config.skills.paths.includes(skillsDir)) {
         config.skills.paths.push(skillsDir);
       }
+      config.agent = config.agent || {};
+      config.agent.bridge_agent = {
+        description: 'OpenSpec-Superpowers bridge orchestrator',
+        mode: 'primary',
+        prompt,
+        ...config.agent.bridge_agent
+      };
     }
   };
 };
