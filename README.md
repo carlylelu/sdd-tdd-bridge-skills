@@ -1,6 +1,6 @@
 # sdd-tdd-bridge
 
-当前版本：**2.0.0**。版本变更及升级步骤见 [CHANGELOG.md](CHANGELOG.md)。
+当前版本：**2.1.0**。版本变更及升级步骤见 [CHANGELOG.md](CHANGELOG.md)。
 
 OpenSpec 与 Superpowers 的衔接插件：六阶段 Skill、主 Agent、本地 Git 检查和最终证据校验。保留规范驱动开发与 TDD 的分工，使用可追踪的 Task—场景—验证映射衔接二者。
 

@@ -1,6 +1,6 @@
 # 版本日志
 
-## [Unreleased]
+## [2.1.0] - 2026-10-19
 
 - 新增原生 OpenSpec explore/proposal 代理和六 Skill 全流程入口。
 - 新增只读 route 与规范摘要，恢复与归档同时验证上游报告新鲜度。
@@ -64,5 +64,6 @@
 
 - 初始版本：OpenSpec–Superpowers 主 Agent、四阶段 Skill、Bash 格式及提交消息检查、Git Hook 模板和多宿主插件清单。
 
-[2.0.0]: https://github.com/carlylelu/sdd-tdd-bridge-skills/compare/aabc26d...main
+[2.1.0]: https://github.com/carlylelu/sdd-tdd-bridge-skills/compare/fa7899b...main
+[2.0.0]: https://github.com/carlylelu/sdd-tdd-bridge-skills/compare/aabc26d...fa7899b
 [1.0.0]: https://github.com/carlylelu/sdd-tdd-bridge-skills/commit/aabc26d
