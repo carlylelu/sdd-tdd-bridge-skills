@@ -1,0 +1,27 @@
+{
+  "name": "sdd-tdd-bridge",
+  "owner": {
+    "name": "carlylelu"
+  },
+  "metadata": {
+    "description": "OpenSpec-Superpowers bridge plugin — strong validation via deterministic checks + Git Hooks + dual verification.",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "sdd-tdd-bridge",
+      "description": "OpenSpec-Superpowers bridge: main Agent orchestrates 4 stage Skills (load-context / planning / spec-compliance-check / dual-verify), deterministic checks for OpenSpec artifact format (openspec-format-check), Git Hooks for commit message (commit-msg-check), dual verification (OpenSpec verify + Superpowers verification) before archive. Connects OpenSpec (what to do) with Superpowers (how to do) with strong validation.",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/bridge-load-context-skill",
+        "./skills/bridge-planning-skill",
+        "./skills/bridge-spec-compliance-check-skill",
+        "./skills/bridge-dual-verify-skill"
+      ],
+      "agents": [
+        "./agents/bridge_agent.md"
+      ]
+    }
+  ]
+}

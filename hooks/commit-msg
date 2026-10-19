@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+message_file=${1:-}
+if [[ -z "$message_file" || ! -f "$message_file" ]]; then
+  echo '[BRIDGE-HOOK-003][BLOCK] Git未提供有效的Commit Message文件' >&2
+  exit 2
+fi
+
+repo_root=$(git rev-parse --show-toplevel 2>/dev/null) || {
+  echo '[BRIDGE-HOOK-001][BLOCK] 当前目录不是Git仓库' >&2
+  exit 2
+}
+
+checker="$repo_root/bridge/checks/commit-msg-check"
+if [[ ! -x "$checker" ]]; then
+  echo '[BRIDGE-HOOK][PASS] bridge/checks/commit-msg-check 不存在，跳过 Commit Message 检查'
+  exit 0
+fi
+
+exec "$checker" --repo "$repo_root" --message-file "$message_file"

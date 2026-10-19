@@ -1,0 +1,16 @@
+# Node.js
+node_modules/
+
+# OS junk
+.DS_Store
+Thumbs.db
+/nul
+
+# IDE
+.idea/
+.vscode/
+
+# Editor temp files
+*.swp
+*.swo
+*~

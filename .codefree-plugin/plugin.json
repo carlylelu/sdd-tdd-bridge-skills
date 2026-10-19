@@ -1,0 +1,22 @@
+{
+  "name": "sdd-tdd-bridge",
+  "description": "OpenSpec-Superpowers 衔接插件，提供统一主 Agent、4 阶段 Skill、OpenSpec 产物格式确定性检查、Git Hook 强制 commit message 规范、双重验证（OpenSpec verify + Superpowers verification）。连接 OpenSpec（管做什么）和 Superpowers（管怎么做），带强校验。",
+  "version": "1.0.0",
+  "author": {
+    "name": "carlylelu"
+  },
+  "homepage": "https://github.com/carlylelu/sdd-tdd-bridge-skills",
+  "repository": "https://github.com/carlylelu/sdd-tdd-bridge-skills.git",
+  "license": "MIT",
+  "codefreeTarget": ["cloud-cli", "ide", "ide-plugin", "cli", "all"],
+  "agentCompatibility": ["codefree", "claudecode", "opencode-npm", "codex"],
+  "categories": ["开发工具"],
+  "keywords": ["openspec", "superpowers", "bridge", "tdd", "spec-compliance", "dual-verify"],
+  "agents": "./agents/",
+  "hooks": "./hooks/",
+  "skills": ["./skills/"],
+  "checks": "./checks/",
+  "displayName": "sdd-tdd-bridge",
+  "isOfficial": false,
+  "changelog": ""
+}
