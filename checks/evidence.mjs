@@ -2,10 +2,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { changeName, git, readJSON, tasks } from './lib.mjs';
+import { assertReport } from './reports.mjs';
+import { requireUpstreamReports } from './context.mjs';
 
 export function fingerprint(repo) {
   const files = [...new Set(git(repo, 'ls-files', '--cached', '--others', '--exclude-standard', '-z').split('\0').filter(Boolean))]
-    .filter(f => !f.startsWith('bridge/reports/') && !f.startsWith('.bridge-hooks/') && f !== 'bridge/install-state.json').sort();
+    .filter(f => (!f.startsWith('bridge/reports/') || /^bridge\/reports\/[^/]+\/(?:context|planning)-report\.json$/.test(f)) && !f.startsWith('.bridge-hooks/') && f !== 'bridge/install-state.json').sort();
   const hash = crypto.createHash('sha256');
   for (const file of files) {
     const full = path.join(repo, file);
@@ -21,17 +23,15 @@ export function fingerprint(repo) {
 }
 function nonemptyEvidence(value) { return Array.isArray(value) && value.length > 0 && value.every(s => typeof s === 'string' && s.trim()); }
 function passingReport(report, expected, current) {
-  for (const [key, value] of Object.entries(expected)) if (report[key] !== value) throw new Error(`Report ${key} must be ${value}`);
-  if (report.schema_version !== 1 || report.result !== 'PASS' || report.fingerprint !== current) throw new Error('Report is failed, unsupported or stale; recheck changed inputs');
-  if (typeof report.checked_at !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(report.checked_at) || !Number.isFinite(Date.parse(report.checked_at)) || new Date(report.checked_at).toISOString() !== report.checked_at || Date.parse(report.checked_at) > Date.now() + 300_000) throw new Error('Report timestamp must be an actual UTC ISO string, not in the future');
-  if (!nonemptyEvidence(report.evidence) || !nonemptyEvidence(report.outputs) || typeof report.next_action !== 'string' || !report.next_action.trim()) throw new Error('Report lacks evidence, outputs or next_action');
-  if (!Array.isArray(report.issues) || report.issues.length) throw new Error('Passing report must have no unresolved issues');
+  assertReport(report, expected);
+  if (report.fingerprint !== current) throw new Error('Report is stale; recheck changed inputs');
 }
 function requireChecks(report, names) {
   for (const name of names) if (report.checks?.[name] !== 'PASS') throw new Error(`Missing passing check: ${name}`);
 }
 export function ready(repo, change) {
   changeName(change);
+  requireUpstreamReports(repo, change);
   const base = path.join(repo, 'bridge/reports', change);
   const taskList = tasks(fs.readFileSync(path.join(repo, 'openspec/changes', change, 'tasks.md'), 'utf8'));
   if (taskList.some(t => !t.done)) throw new Error('All tasks must be completed before archive');

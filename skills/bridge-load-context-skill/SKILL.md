@@ -5,7 +5,7 @@ description: 在已准备好 OpenSpec 变更、需要进入实现或恢复衔接
 
 # Bridge Load Context
 
-先读取本 Skill 的 `references/workflow.md`。它是四阶段共用的规范合并、授权、报告和失败路由契约。
+先读取本 Skill 的 `references/workflow.md`。它是六阶段共用的规范合并、授权、报告和失败路由契约。
 
 ## 输入与前置条件
 
@@ -25,3 +25,5 @@ description: 在已准备好 OpenSpec 变更、需要进入实现或恢复衔接
 ## 完成与路由
 
 只有格式检查和有效规范解析通过才 PASS，next_action=PLANNING。上游歧义返回 UPSTREAM_CHANGE_REQUIRED；不擅自修改 OpenSpec 文件，不执行实现。语义判断属于 Agent 审查，不能宣称格式检查已证明范围合规。
+
+阶段开始和结束运行 `node bridge/checks/bridge.mjs spec-fingerprint --repo . --change <change>`；两次结果必须相同，将真实摘要保存为 spec_fingerprint。规范变化重新 LOAD_CONTEXT，禁止只更新旧报告摘要。PLANNING 必须验证 context 的 spec_fingerprint 等于当前结果，task_mapping 恰好覆盖当前全部任务 ID。

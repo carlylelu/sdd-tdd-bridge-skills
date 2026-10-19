@@ -3,8 +3,9 @@
  *
  * Registers skills and a primary agent via the config hook.
  *
- * The 4 skills form the OpenSpec-Superpowers bridge pipeline:
- *   bridge-load-context-skill → bridge-planning-skill
+ * The 6 skills form the OpenSpec-Superpowers bridge pipeline:
+ *   bridge-explore-skill → bridge-proposal-skill
+ *   → bridge-load-context-skill → bridge-planning-skill
  *   → bridge-spec-compliance-check-skill (per Task)
  *   → bridge-dual-verify-skill (final)
  *

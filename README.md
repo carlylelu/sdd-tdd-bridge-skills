@@ -2,7 +2,7 @@
 
 当前版本：**2.0.0**。版本变更及升级步骤见 [CHANGELOG.md](CHANGELOG.md)。
 
-OpenSpec 与 Superpowers 的衔接插件：四阶段 Skill、主 Agent、本地 Git 检查和最终证据校验。保留规范驱动开发与 TDD 的分工，使用可追踪的 Task—场景—验证映射衔接二者。
+OpenSpec 与 Superpowers 的衔接插件：六阶段 Skill、主 Agent、本地 Git 检查和最终证据校验。保留规范驱动开发与 TDD 的分工，使用可追踪的 Task—场景—验证映射衔接二者。
 
 ## 能力与边界
 
@@ -21,8 +21,8 @@ OpenSpec 与 Superpowers 的衔接插件：四阶段 Skill、主 Agent、本地 
 
 - Node.js 20+、Git；不需要额外 npm 运行时依赖。
 - Git Hooks 需要 POSIX sh（Windows 使用 Git for Windows 自带环境）。直接调用 Node CLI 不需要 Bash。
-- 宿主已安装 OpenSpec 与 Superpowers，且可发现四个 bridge Skill。宿主命令及命名空间以实际环境为准。
-- 项目已准备 proposal.md、design.md、tasks.md 和 specs/。无需为证明历史命令执行而重复 explore/propose；产物不完整时回上游处理。
+- 宿主已安装 OpenSpec 与 Superpowers，且可发现六个 bridge Skill。宿主命令及命名空间以实际环境为准。
+- 可从原始想法开始，由原生 explore/propose 形成产物；已有完整 proposal.md、design.md、tasks.md 和 specs/ 时直接进入下游，无需重复上游工序。
 
 ## 安装：宿主能力与仓库检查分别启用
 
@@ -45,7 +45,7 @@ OpenSpec 与 Superpowers 的衔接插件：四阶段 Skill、主 Agent、本地 
 
 ### 其他支持 Skill 的宿主（包括 Codex）
 
-将 `skills/` 下的四个 Skill 目录完整复制到该宿主配置的技能目录；必须保留 `bridge-load-context-skill/references/workflow.md`。`agents/bridge_agent.md` 是编排说明，是否可自动注册由宿主决定；不能仅复制文件就宣称原生 Agent 已启用。可由当前会话按该编排说明调用四个 Skill。
+将 `skills/` 下的六个 Skill 目录完整复制到该宿主配置的技能目录；必须保留 `bridge-load-context-skill/references/workflow.md`。`agents/bridge_agent.md` 是编排说明，是否可自动注册由宿主决定；不能仅复制文件就宣称原生 Agent 已启用。可由当前会话按该编排说明调用六个 Skill。
 
 ### 为目标仓库启用检查
 
@@ -72,12 +72,14 @@ node checks/bridge.mjs uninstall --repo "/path/to/project"
 
 安装状态 `bridge/install-state.json` 包含机器本地路径，和 `.bridge-hooks/` 一起保持本地，不提交。新克隆应重新 install。不要手工覆盖现有 core.hooksPath。
 
-## 四阶段
+## 六阶段
 
 完整规则以 [共享流程契约](skills/bridge-load-context-skill/references/workflow.md) 为准，主 Agent 不再重复维护另一份规则。
 
 | 阶段 | Skill | 输出 |
 |---|---|---|
+| EXPLORE | bridge-explore-skill | 原生探索交接；命名后可选 explore-report.json |
+| PROPOSAL | bridge-proposal-skill | 原生方案产物；可选 proposal-report.json |
 | LOAD_CONTEXT | bridge-load-context-skill | context-report.json：有效规范、源摘要、结构校验 |
 | PLANNING | bridge-planning-skill | planning-report.json：Task—场景—验证映射 |
 | IMPLEMENT_TASK | bridge-spec-compliance-check-skill | tasks/<task-id>.json：当前任务证据 |
@@ -126,7 +128,7 @@ Change-Id: add-login
 
 [任务模板](templates/task-report.json) 和 [最终模板](templates/verify-report.json) 默认 BLOCKED。公共字段、任务映射和失败路由见共享契约。schema_version 为 1，包含实际时间、真实证据和 fingerprint。
 
-fingerprint 覆盖 Git 跟踪文件及未忽略的新文件、删除、链接目标和执行权限；逐文件计算字节摘要，再对带类型和文件名的 JSON 记录计算总摘要，避免二进制内容与记录边界混淆。排除报告和安装状态，避免写报告使自身失效。被 Git 忽略的文件/外部服务需额外记录环境与验证证据；子模块需要单独验证，不能被无声忽略。此次摘要算法变更后旧 PASS 必须重新验证。
+fingerprint 覆盖 Git 跟踪文件及未忽略的新文件、删除、链接目标和执行权限；逐文件计算字节摘要，再对带类型和文件名的 JSON 记录计算总摘要，避免二进制内容与记录边界混淆。包含 context/planning 报告，排除其他报告和安装状态，避免最终报告使自身失效。被 Git 忽略的文件/外部服务需额外记录环境与验证证据；子模块需要单独验证，不能被无声忽略。此次摘要算法变更后旧 PASS 必须重新验证。
 
 先完成 tasks.md 的进度更新，再在最终工作区实际复查每个任务，更新逐任务报告；不能只换摘要和时间。最终全部 Task 报告及 verify 报告须匹配同一最终摘要。代码、规范或任务清单变化后旧 PASS 失效。此版本采取保守的全工作区失效策略，避免漏掉共享依赖影响。
 
@@ -144,7 +146,7 @@ npm pack --dry-run
 ## 包结构
 
 - agents/：主 Agent 编排说明。
-- skills/：四阶段及共享流程契约。
+- skills/：六阶段及共享流程契约。
 - checks/lib.mjs：Git 快照、格式和提交检查。
 - checks/evidence.mjs：摘要和最终证据校验。
 - checks/install.mjs：仓库安装、诊断及卸载。
@@ -154,3 +156,22 @@ npm pack --dry-run
 - tests/：真实 Git 仓库回归测试。
 
 [MIT License](LICENSE)
+
+## 原生上游代理与恢复
+
+主 Agent 现在覆盖 EXPLORE → PROPOSAL → LOAD_CONTEXT → PLANNING → IMPLEMENT_TASK → DUAL_VERIFY → ARCHIVE。前两阶段通过宿主实际提供的 OpenSpec 原生能力执行，单阶段请求在该阶段结束；完整已有产物直接进入下游。探索默认只读，原生能力缺失会 BLOCKED。
+
+```sh
+node bridge/checks/bridge.mjs route --repo .
+node bridge/checks/bridge.mjs route --repo . --change my-change --intent explore
+node bridge/checks/bridge.mjs route --repo . --change my-change --intent propose
+node bridge/checks/bridge.mjs spec-fingerprint --repo . --change my-change
+```
+
+安装前可使用本插件 checks/bridge.mjs 的绝对路径运行只读命令。route 输出仅为建议，需结合语义审查；多变更需选择，缺失或格式错误的产物回到方案阶段。宿主原生命令不能作为 shell 命令执行。
+
+升级后重新运行安装流程以刷新 runtime（新增 context、workflow、reports 模块），再运行 doctor。旧 context/planning 报告缺少 spec_fingerprint 时重新生成；不必补做探索和方案报告。规范摘要覆盖变更、主规范、配置与护栏，忽略任务勾选进度和换行差异；最终工作区摘要仍检查代码与任务进度。上游变更保留历史报告，但 ready 拒绝过期报告。
+
+代理语义依据 [OpenSpec explore](https://github.com/Fission-AI/OpenSpec/blob/main/docs/explore.md) 和 [原生 Skills](https://github.com/Fission-AI/OpenSpec/blob/main/docs-lab/reference/skills.md)，具体可用入口以宿主发现结果为准。
+
+最终工作区摘要包含 context-report.json 和 planning-report.json，绑定有效规范解释和计划内容；其他阶段报告仍排除以避免写报告使自身失效。生成或修改上下文/计划后，重新获取工作区摘要并真实重审下游证据。

@@ -1,7 +1,7 @@
 {
   "name": "sdd-tdd-bridge",
   "version": "2.0.0",
-  "description": "OpenSpec-Superpowers bridge plugin — main Agent + 4 stage Skills + deterministic checks + Git Hooks + dual verification. Connects OpenSpec (what) with Superpowers (how) with strong validation.",
+  "description": "OpenSpec-Superpowers bridge plugin — main Agent + 6 stage Skills + deterministic checks + Git Hooks + dual verification. Connects OpenSpec (what) with Superpowers (how) with strong validation.",
   "type": "module",
   "main": ".opencode/plugins/sdd-tdd-bridge.js",
   "bin": {

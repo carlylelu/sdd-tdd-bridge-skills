@@ -2,11 +2,13 @@
 import { repository, formatCheck, commitCheck } from './lib.mjs';
 import { fingerprint, ready } from './evidence.mjs';
 import { install, doctor, uninstall } from './install.mjs';
+import { specFingerprint } from './context.mjs';
+import { route } from './workflow.mjs';
 
 try {
   const [command, ...args] = process.argv.slice(2);
   const options = {};
-  const allowed = new Set(command === 'format' ? ['--repo', '--change', '--staged'] : command === 'commit' ? ['--repo', '--message-file'] : command === 'ready' ? ['--repo', '--change'] : ['--repo']);
+  const allowed = new Set(command === 'format' ? ['--repo', '--change', '--staged'] : command === 'commit' ? ['--repo', '--message-file'] : ['ready', 'spec-fingerprint'].includes(command) ? ['--repo', '--change'] : command === 'route' ? ['--repo', '--change', '--intent'] : ['--repo']);
   for (let i = 0; i < args.length; i++) {
     const key = args[i];
     if (!allowed.has(key) || key in options) throw new Error(`Unknown/duplicate option: ${key}`);
@@ -26,6 +28,10 @@ try {
       if (!options['--message-file']) throw new Error('Required: --message-file');
       result = commitCheck(repo, options['--message-file']); break;
     case 'fingerprint': result = fingerprint(repo); break;
+    case 'route': result = route(repo, { change: options['--change'], intent: options['--intent'] }); break;
+    case 'spec-fingerprint':
+      if (!options['--change']) throw new Error('Required: --change');
+      result = specFingerprint(repo, options['--change']); break;
     case 'ready':
       if (!options['--change']) throw new Error('Required: --change');
       formatCheck(repo, { change: options['--change'] });
@@ -33,7 +39,7 @@ try {
     case 'install': result = install(repo); break;
     case 'doctor': result = doctor(repo); break;
     case 'uninstall': result = uninstall(repo); break;
-    default: throw new Error('Usage: bridge.mjs <format|commit|fingerprint|ready|install|doctor|uninstall> --repo <root>');
+    default: throw new Error('Usage: bridge.mjs <route|spec-fingerprint|format|commit|fingerprint|ready|install|doctor|uninstall> --repo <root>');
   }
   console.log(JSON.stringify(result, null, 2));
 } catch (error) {

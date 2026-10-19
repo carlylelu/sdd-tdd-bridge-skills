@@ -27,3 +27,5 @@ description: 在全部 OpenSpec Task 完成、准备最终验收和归档时使�
 全部维度真实通过且 ready 为 PASS 后返回 PASS，next_action=ARCHIVE，由主 Agent 在授权范围调用宿主归档。验证到归档之间输入变化必须重新验证。
 
 实现问题 FAILED → 实现者修复 → 受影响任务重审 → 重验；需求/架构改变 UPSTREAM_CHANGE_REQUIRED → 用户决定；工具/环境异常 BLOCKED。沿用已有修复授权，不重复审批；本验证 Skill 始终不修改实现。
+
+最终 ready 同时要求 context/planning 的 spec_fingerprint 新鲜。规范变化先回 LOAD_CONTEXT 和 PLANNING；仅勾选完成状态不需重做规划，但需要重新确认最终工作区证据。不得只改摘要或时间。

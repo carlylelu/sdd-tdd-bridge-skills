@@ -7,7 +7,7 @@ import { git, readJSON, writeJSON, assertManagedPaths } from './lib.mjs';
 
 const source = path.dirname(fileURLToPath(import.meta.url));
 const marker = '# sdd-tdd-bridge managed hook v1';
-const runtimeFiles = ['bridge.mjs', 'lib.mjs', 'install.mjs', 'evidence.mjs', 'openspec-format-check', 'commit-msg-check'];
+const runtimeFiles = ['bridge.mjs', 'lib.mjs', 'install.mjs', 'evidence.mjs', 'reports.mjs', 'context.mjs', 'workflow.mjs', 'openspec-format-check', 'commit-msg-check'];
 function managedPaths(repo) {
   assertManagedPaths(repo, ['bridge', 'bridge/checks', 'bridge/install-state.json', '.bridge-hooks', ...runtimeFiles.map(name => `bridge/checks/${name}`)]);
 }

@@ -1,5 +1,20 @@
 # 版本日志
 
+## [Unreleased]
+
+- 新增原生 OpenSpec explore/proposal 代理和六 Skill 全流程入口。
+- 新增只读 route 与规范摘要，恢复与归档同时验证上游报告新鲜度。
+- 旧 context/planning 报告需重新生成，安装 runtime 后运行 doctor。
+- 最终摘要绑定上下文与计划内容，防止修改映射后沿用旧验收。
+- 验证：67 项测试，65 通过、0 失败、2 项 Windows 环境跳过；真实打包安装及五个交接压力场景通过，真实宿主调用待验证。
+
+### 从 2.0.0 升级
+
+1. 同步六个 Skill、主 Agent 和共享契约；仅更新仓库检查器不会安装宿主原生 OpenSpec/Superpowers 能力。
+2. 备份已有 `bridge/checks/`。安装器不会覆盖不同内容，按 README 的冲突恢复步骤更新运行时后运行 `doctor`。
+3. 重新执行 LOAD_CONTEXT 和 PLANNING，生成包含 `spec_fingerprint` 的报告；无需补做探索或方案报告。随后真实重审任务和最终验证，不只替换时间或摘要。
+4. `route` 只提供只读阶段建议，不代表阶段已执行；原生能力缺失时代理返回 BLOCKED。
+
 ## [2.0.0] - 2026-10-19
 
 本版本完成五轮可靠性检查与修复，保留主 Agent 与四阶段 Skill 架构。报告格式和执行环境有不兼容变化，因此升级主版本号。

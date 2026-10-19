@@ -1,6 +1,6 @@
 # Bridge 统一流程契约（schema_version: 1）
 
-四个阶段和主 Agent 共用此契约。宿主的系统指令、项目护栏和用户授权优先。此文件不授予提交、推送或发布权限。
+六个阶段和主 Agent 共用此契约。宿主的系统指令、项目护栏和用户授权优先。此文件不授予提交、推送或发布权限。
 
 ## 有效规范
 
@@ -16,7 +16,7 @@
 
 ## 授权和阶段状态
 
-用户已授权端到端实现时，可连续执行 LOAD_CONTEXT → PLANNING → IMPLEMENT_TASK（循环）→ DUAL_VERIFY → ARCHIVE；用户只授权单阶段时，到该阶段终点停止。不要求每个阶段重复人工触发。归档仍须在用户授权范围和宿主工具权限内。
+用户已授权端到端实现时，可连续执行 EXPLORE → PROPOSAL → LOAD_CONTEXT → PLANNING → IMPLEMENT_TASK（循环）→ DUAL_VERIFY → ARCHIVE；用户只授权单阶段时，到该阶段终点停止。不要求每个阶段重复人工触发。归档仍须在用户授权范围和宿主工具权限内。
 
 统一 result 枚举：PASS、FAILED、BLOCKED、NEEDS_CLARIFICATION、UPSTREAM_CHANGE_REQUIRED。返回必须包含 schema_version、stage、change_id、result、outputs、evidence、issues、next_action。可选 task_id；不存在的测试数量不得编造。
 
@@ -74,7 +74,7 @@ requirement/scenario 的 ID 优先使用上游显式 ID，否则使用 capabilit
 
 报告公共字段：schema_version=1、stage、change_id、result、checked_at（实际 UTC ISO 时间，采用 JavaScript toISOString 的 YYYY-MM-DDTHH:mm:ss.sssZ 格式，不得超过当前时间五分钟）、fingerprint、evidence（非空字符串数组）、issues（数组）、outputs（非空字符串数组）、next_action（非空字符串）。PASS 的 issues 必须为空；已解决问题可记录到独立历史字段。Task 还必须包含 scenario_ids、implementation_refs、test_refs 字符串数组，文档或配置等不适用场景的数组可以为空，但须在证据中说明验证方式。模板位于插件 templates/；模板默认 BLOCKED，必须用实际检查结果替换，不能把模板当证据。
 
-运行 `node bridge/checks/bridge.mjs fingerprint --repo .` 获取工作区摘要：覆盖 Git 跟踪文件及未忽略的新文件、删除和执行权限；排除 bridge/reports/、.bridge-hooks/、bridge/install-state.json，避免报告写入使自身失效。忽略文件（如构建产物）和外部服务不在摘要中，需另列环境/命令证据；子模块须单独验证。
+运行 `node bridge/checks/bridge.mjs fingerprint --repo .` 获取工作区摘要：覆盖 Git 跟踪文件及未忽略的新文件、删除和执行权限；排除 bridge/reports/ 中的其他报告、.bridge-hooks/、bridge/install-state.json，避免报告写入使自身失效。忽略文件（如构建产物）和外部服务不在摘要中，需另列环境/命令证据；子模块须单独验证。
 
 Task 报告绑定审查时的摘要。最终阶段采用保守策略：全部 task 报告必须在最终工作区重新确认；先更新任务完成标记，再生成摘要，实际复查关联行为、回归和代码审查，不能只替换摘要或时间。任何代码/规范/任务清单变化使旧 PASS 失效。恢复时重算摘要、查看任务清单和证据，不凭聊天记录认定完成。
 
@@ -87,3 +87,15 @@ LOAD_CONTEXT / PLANNING 的输入依赖是规范、护栏和映射；实现期�
 归档前必须执行 `node bridge/checks/bridge.mjs ready --repo . --change <change>`。该命令检查格式、任务完成、逐任务报告、最终覆盖、OpenSpec 结果、命令退出码和摘要新鲜度；它不执行测试、不证明证据真实性、不解释需求语义，也不能拦截从其他入口直接运行的 OpenSpec archive。主 Agent 只能在该命令 PASS 且宿主验证真实完成后调用宿主归档入口。
 
 OpenSpec/Superpowers 的名称空间和命令形式因宿主而异。先确认实际可用的 Skill/命令，禁止把 `/opsx:verify` 当成所有宿主都支持的 shell 命令。缺失则 BLOCKED。归档目录由宿主确定；本地检查支持 openspec/changes/archive/ 和 openspec/archive/，并从活跃变更发现中排除 archive。格式检查不阻止整项移除/归档，但归档前 ready 仍须执行。
+
+## 全流程入口与上游新鲜度
+
+主 Agent 首先使用只读 route 判断入口，结合用户明确的 explore/propose 意图与语义判断。EXPLORE 和 PROPOSAL 委托宿主原生 OpenSpec 能力，禁止模拟原生命令或执行聊天 slash shell 命令。探索默认只读；捕获文件需要用户授权。仅探索或仅方案请求在相应阶段停止。完整已有产物可以直接进入 LOAD_CONTEXT，不要求补做 explore/proposal 报告；格式通过不代表需求完整。
+
+运行 `node bridge/checks/bridge.mjs spec-fingerprint --repo . --change <change>` 获取独立规范摘要。它覆盖选定变更全部文件、主规范、OpenSpec config.yaml/yml/json 及 AGENTS.md/CLAUDE.md，规范化文本换行和 tasks.md checkbox 完成状态。任务 ID、描述、需求、设计和护栏变化会使旧 context/planning 失效；业务代码变化不触发重新规划。勾选完成状态仍会使最终工作区摘要失效。
+
+context-report.json 和 planning-report.json 必须含当前 `spec_fingerprint`，公共 fingerprint 仍记录当时工作区。阶段开始和结束都计算规范摘要，若期间变化则重新处理输入，不能签发 PASS。planning 的 task_mapping 必须恰好覆盖当前全部 task ID。旧报告缺少 spec_fingerprint 视为失效，按 LOAD_CONTEXT → PLANNING 重建；保留历史记录，不只修改摘要。ready 同时检查两份上游报告、映射及最终证据，旧规范报告即使配上新最终报告也不能归档。
+
+可选上游报告路径为 bridge/reports/<change>/explore-report.json 和 proposal-report.json。没有变更名时探索只在对话交接，不创建报告目录。这些报告不作为下游必需凭据。路由输出 decision_only=true 只表示建议，不能当成执行或语义通过证据。工具缺失返回 BLOCKED，语义歧义交给用户决定后再调用原生更新入口。
+
+最终工作区摘要包含 context-report.json 和 planning-report.json，绑定有效规范解释和计划内容；其他阶段报告仍排除以避免写报告使自身失效。生成或修改上下文/计划后，重新获取工作区摘要并真实重审下游证据。

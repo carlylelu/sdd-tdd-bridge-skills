@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "stage": "PLANNING",
+  "change_id": "REPLACE",
+  "result": "BLOCKED",
+  "checked_at": null,
+  "fingerprint": null,
+  "spec_fingerprint": null,
+  "evidence": [],
+  "issues": [
+    "尚未执行实际阶段"
+  ],
+  "outputs": [],
+  "next_action": "执行真实阶段并填写证据",
+  "task_mapping": []
+}
