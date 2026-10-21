@@ -19,5 +19,22 @@
     "exclusion_scope": "NOT_RUN",
     "regression": "NOT_RUN",
     "code_review": "NOT_RUN"
+  },
+  "invocations": {
+    "implementation": {
+      "skill": null,
+      "status": "NOT_RUN",
+      "evidence": []
+    },
+    "tdd": {
+      "skill": null,
+      "status": "NOT_RUN",
+      "evidence": []
+    },
+    "code_review": {
+      "skill": null,
+      "status": "NOT_RUN",
+      "evidence": []
+    }
   }
 }

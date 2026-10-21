@@ -1,5 +1,20 @@
 # 版本日志
 
+## [2.2.0] - 2026-10-21
+
+- 修复 PLANNING 自建 Bridge 报告替代 Superpowers writing-plans：强制真实原生计划、路径/摘要与调用凭据。
+- 明确原生执行器、行为 TDD、规范先于质量审查、最终独立审查与 verification-before-completion 的实际委托，统一 finishing 和授权出口。
+- 新增 plan-fingerprint；强化任务映射结构、计划新鲜度和逐任务/最终调用记录校验；旧版凭据需真实重建。
+- 修复 Git 忽略 context/planning 报告时复用旧最终验收的绕过路径；补充 Superpowers 与 OpenSpec verify 能力缺失恢复说明。
+- 三轮流程复核完成；74 项测试中 73 通过、0 失败、1 项 POSIX 环境跳过，真实打包安装与新 CLI 校验通过。真实业务宿主端到端调用尚未验证。
+
+### 从 2.1.x 升级
+
+1. 更新完整插件（六个 Skill、主 Agent、共享契约、检查器与模板），确认宿主实际发现 Superpowers 所需能力。
+2. 备份旧仓库运行时，按 README 的安装冲突恢复步骤更新并运行 doctor；不要只复制单个检查脚本。
+3. 旧 planning 报告缺少真实计划引用、调用凭据或完整映射时，重新执行 writing-plans 和 Bridge 核验；保留 OpenSpec Task ID 与已有需求范围。
+4. 真实重审任务、最终代码与验证，重新生成调用凭据和当前工作区摘要；不得仅给旧 PASS 补字段或替换摘要。
+
 ## [2.1.1] - 2026-10-21
 
 - 原生 OpenSpec Skill 缺失时提供按宿主区分的安装、项目 init、更新和重载指引，避免只返回 BLOCKED 或默认建议底层 CLI 绕过。
@@ -71,7 +86,8 @@
 
 - 初始版本：OpenSpec–Superpowers 主 Agent、四阶段 Skill、Bash 格式及提交消息检查、Git Hook 模板和多宿主插件清单。
 
-[2.1.1]: https://github.com/carlylelu/sdd-tdd-bridge-skills/compare/b3daf54...main
+[2.2.0]: https://github.com/carlylelu/sdd-tdd-bridge-skills/compare/57e9d9d...main
+[2.1.1]: https://github.com/carlylelu/sdd-tdd-bridge-skills/compare/b3daf54...57e9d9d
 [2.1.0]: https://github.com/carlylelu/sdd-tdd-bridge-skills/compare/fa7899b...b3daf54
 [2.0.0]: https://github.com/carlylelu/sdd-tdd-bridge-skills/compare/aabc26d...fa7899b
 [1.0.0]: https://github.com/carlylelu/sdd-tdd-bridge-skills/commit/aabc26d

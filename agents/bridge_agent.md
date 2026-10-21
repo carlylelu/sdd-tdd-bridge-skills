@@ -17,9 +17,9 @@ mode: primary
 | EXPLORE | bridge-explore-skill → 宿主原生 explore | 原始想法或显式探索 | 需求和选项明确，或等待用户决定 |
 | PROPOSAL | bridge-proposal-skill → 宿主原生 propose/update | 需求已明确，产物缺失或需更新 | 原生方案产物完整且格式与语义通过 |
 | LOAD_CONTEXT | bridge-load-context-skill | 用户已授权、存在明确变更 | 有效规范和格式检查通过 |
-| PLANNING | bridge-planning-skill | context 报告 PASS，规范输入未变化 | Task—场景—验证映射完整 |
-| IMPLEMENT_TASK | Superpowers 实现能力；随后 bridge-spec-compliance-check-skill | 当前任务计划明确 | 当前任务及回归、代码质量审查 PASS |
-| DUAL_VERIFY | bridge-dual-verify-skill | 全部任务已完成 | 全量覆盖和双重验证 PASS |
+| PLANNING | bridge-planning-skill → 原生 writing-plans | context 报告 PASS，规范输入未变化 | Task—场景—验证映射完整 |
+| IMPLEMENT_TASK | 原生 subagent-driven-development / executing-plans → Bridge 规范审查 → 原生 requesting-code-review | 当前任务计划明确 | 当前任务及回归、代码质量审查 PASS |
+| DUAL_VERIFY | bridge-dual-verify-skill → 原生 requesting-code-review、verification-before-completion 与 OpenSpec verify | 全部任务已完成 | 全量覆盖和双重验证 PASS |
 | ARCHIVE | 宿主 OpenSpec 归档入口 | ready 命令 PASS，用户授权允许 | 核对归档结果与主规范更新 |
 
 ## 启动与恢复
@@ -33,7 +33,7 @@ mode: primary
 
 ## IMPLEMENT_TASK 交接
 
-传递 change_id、task_id、planning 中的需求/场景 ID、实现文件、验证命令和当前有效规范。单任务审查只看关联场景及共享约束；未来任务不应在此时被要求完成。规范合规与代码质量都须有证据。
+实际发现并委托原生 subagent-driven-development 或 executing-plans，按用户选择和宿主能力执行；缺失则 BLOCKED，不能只借鉴流程后自行实现。传递完整真实计划路径、当前 Task 全文、change_id、task_id、planning 中的需求/场景 ID、实现文件、验证命令和当前有效规范。行为实现实际执行 test-driven-development。单任务审查只看关联场景及共享约束；未来任务不应在此时被要求完成。先调用 Bridge 规范审查承担原生流程的 spec-review 环节，规范通过后再实际调用 requesting-code-review 进行独立质量审查；二者齐备才签发任务综合 PASS。不要倒序或因质量凭据未生成而阻止规范审查启动。
 
 审查 FAILED 时，按统一契约回到实现者，在已授权范围内修复并重验。审查 Skill 不修改代码。需要调整需求/架构/排除范围时返回 UPSTREAM_CHANGE_REQUIRED，请用户决定。普通修复不重复审批；同因两次失败停止该路径并展示根因。
 
@@ -51,3 +51,7 @@ mode: primary
 统一返回字段、失败路由、摘要策略及能力边界以共享契约为准。禁止伪造命令/审查证据、用旧报告替代新验证或修改上游规范规避检查。Git hooks 只能做本地提交检查，不能保证所有宿主入口都执行了语义审查。
 
 上游改动按 spec-fingerprint 自动使旧 context/planning 失效。需求或架构调整经用户决定后，交接 PROPOSAL 的原生更新入口，再回到 LOAD_CONTEXT；保留历史证据，禁止仅重写摘要恢复 PASS。探索/方案只代理原生能力，缺失则 BLOCKED。
+
+## 原生执行流程的出口适配
+
+实际执行外部 Skill，而非仅引用其名称。writing-plans 产生实现计划；Bridge 只做映射核验和报告。原生执行流程的 finishing-a-development-branch 环节可按其指引加载，但其提交、合并、PR、清理选项仅在用户授权内执行，不能作为本插件的提前完成出口。全部 Task 完成必须先回 DUAL_VERIFY 和 ready；归档须在已有用户授权范围内；已有授权包含归档时不重复索取。不得因计划中有 commit 步骤而自动提交，也不得同时启动第二个实现者重复同一 Task。

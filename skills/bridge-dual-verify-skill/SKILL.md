@@ -16,10 +16,10 @@ description: 在全部 OpenSpec Task 完成、准备最终验收和归档时使�
 1. 重读实际需求、代码与测试，核对规范源和映射未变化。规范变化回到 LOAD_CONTEXT/PLANNING；实现变化重新审查受影响任务。
 2. 在最终工作区重新确认全部任务关联行为、共享约束、回归和代码质量，刷新逐任务报告到最终摘要。不得只修改旧报告中的 fingerprint 或 checked_at。
 3. 执行最终全量场景覆盖和跨任务集成检查，包括全部 deferred_integration 项、有效主规范、delta 修改/删除和设计一致性。任何延后项未验证都不得 PASS。
-4. 调用实际可用的 OpenSpec verify。`/opsx:verify` 是宿主命令示例，不作为通用 shell 命令执行。记录真实结果及报告引用；缺少入口 BLOCKED。
-5. 通过 Superpowers verification-before-completion 或项目验证流程执行全部规定命令。命令取自项目配置/护栏，不把 npm test 视为所有 Node 项目的充分验证。记录每条命令、退出码、日志位置和实际覆盖范围；未能获取数量时记录 unknown，不能编造。
+4. 实际调用 requesting-code-review，对最终全部差异（实际基线到 HEAD、暂存/未暂存及未跟踪实现文件）执行独立代码质量审查，不能以逐任务旧结论或自己复述取代。随后调用实际可用的 OpenSpec verify。`/opsx:verify` 是宿主命令示例，不作为通用 shell 命令执行。记录真实结果及报告引用；缺少入口 BLOCKED。OpenSpec core profile 不保证包含 verify；此时提示 `openspec config profile` 选择启用 verify，再于目标项目运行 `openspec update`，重载后发现真实入口。不能将 CLI validate 等同于语义 verify。
+5. 必须实际调用 Superpowers verification-before-completion，由该 Skill 按项目验证流程执行全部规定命令；项目命令是输入，不能用“运行了项目测试”省略该 Skill。命令取自项目配置/护栏，不把 npm test 视为所有 Node 项目的充分验证。记录每条命令、退出码、日志位置和实际覆盖范围；未能获取数量时记录 unknown，不能编造。
 6. 规范检查失败仍可收集独立且安全的命令验证证据，便于一次性诊断；任一必需项失败都不能 PASS。零测试或跳过范围需要说明适用的验收依据，不能只凭退出码 0。
-7. 保存 `bridge/reports/<change>/verify-report.json`。包含公共字段、完整 tasks ID 列表、checks（full_scenario_coverage、effective_spec_compliance、code_review）、openspec_verify（result/evidence）、verification（command/exit_code/evidence 数组）。引用全部逐任务 JSON；可附 Markdown 汇总。
+7. 保存 `bridge/reports/<change>/verify-report.json`。包含公共字段、完整 tasks ID 列表、checks（full_scenario_coverage、effective_spec_compliance、code_review）、openspec_verify（entry/result/evidence）、verification（command/exit_code/evidence 数组）。包含 invocations.verification（verification-before-completion）和 invocations.code_review（requesting-code-review）的实际执行凭据。引用全部逐任务 JSON；可附 Markdown 汇总。
 8. 执行 `node bridge/checks/bridge.mjs ready --repo . --change <change>`，记录实际结果。任何失败、过期报告、遗漏任务或命令失败都不得通知归档。
 
 ## 完成与路由

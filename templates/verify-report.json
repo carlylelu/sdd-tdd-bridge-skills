@@ -17,7 +17,20 @@
   },
   "openspec_verify": {
     "result": "NOT_RUN",
-    "evidence": []
+    "evidence": [],
+    "entry": null
   },
-  "verification": []
+  "verification": [],
+  "invocations": {
+    "verification": {
+      "skill": null,
+      "status": "NOT_RUN",
+      "evidence": []
+    },
+    "code_review": {
+      "skill": null,
+      "status": "NOT_RUN",
+      "evidence": []
+    }
+  }
 }

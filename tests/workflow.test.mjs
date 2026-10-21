@@ -1,3 +1,4 @@
+import { invocations, mapping, planFile } from './helpers/flow.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -29,15 +30,15 @@ async function seedUpstream(f) {
   const spec = (await contextAPI()).specFingerprint(f.repo, 'demo').fingerprint;
   const common = { schema_version: 1, change_id: 'demo', result: 'PASS', checked_at: new Date().toISOString(), spec_fingerprint: spec, fingerprint: fingerprint(f.repo).fingerprint, evidence: ['fixture source review'], issues: [], outputs: ['fixture-report.json'], next_action: 'IMPLEMENT_TASK' };
   const context = { ...common, stage: 'LOAD_CONTEXT' };
-  const plan = { ...common, stage: 'PLANNING', task_mapping: [{ task_id: '1.1', requirement_ids: ['auth/Login'], scenario_ids: ['auth/Login/Login'], verification: [{ command: 'node --test', test_ref: 'tests/login.js' }] }] };
+  const plan = { ...common, stage: 'PLANNING', plan: planFile(f.repo), invocations: invocations(), task_mapping: mapping() };
   const save = () => { writeJSON(path.join(f.repo, 'bridge/reports/demo/context-report.json'), context); writeJSON(path.join(f.repo, 'bridge/reports/demo/planning-report.json'), plan); };
   save(); return { common, context, plan, save };
 }
 function seedFinal(f, common) {
   const base = path.join(f.repo, 'bridge/reports/demo');
-  const current = { ...common, fingerprint: fingerprint(f.repo).fingerprint };
+  const current = { ...common, invocations: invocations(), fingerprint: fingerprint(f.repo).fingerprint };
   writeJSON(path.join(base, 'tasks/1.1.json'), { ...current, stage: 'IMPLEMENT_TASK', task_id: '1.1', scenario_ids: ['auth/Login/Login'], implementation_refs: ['src/login.js'], test_refs: ['tests/login.js'], checks: Object.fromEntries(['scenario_coverage', 'design_compliance', 'exclusion_scope', 'regression', 'code_review'].map(k => [k, 'PASS'])) });
-  writeJSON(path.join(base, 'verify-report.json'), { ...current, stage: 'DUAL_VERIFY', tasks: ['1.1'], checks: Object.fromEntries(['full_scenario_coverage', 'effective_spec_compliance', 'code_review'].map(k => [k, 'PASS'])), openspec_verify: { result: 'PASS', evidence: ['fixture review'] }, verification: [{ command: 'node --test', exit_code: 0, evidence: ['fixture tests pass'] }] });
+  writeJSON(path.join(base, 'verify-report.json'), { ...current, stage: 'DUAL_VERIFY', tasks: ['1.1'], checks: Object.fromEntries(['full_scenario_coverage', 'effective_spec_compliance', 'code_review'].map(k => [k, 'PASS'])), openspec_verify: { entry: 'openspec-verify-change', result: 'PASS', evidence: ['fixture review'] }, verification: [{ command: 'node --test', exit_code: 0, evidence: ['fixture tests pass'] }] });
 }
 
 test('route CLI accepts idea-only input without creating upstream artifacts', t => {
@@ -134,4 +135,82 @@ test('changed planning assertions invalidate existing final evidence', async t =
   seedFinal(f, reports.common); assert.equal(ready(f.repo, 'demo').result, 'PASS');
   reports.plan.task_mapping[0].task_assertions = ['New acceptance assertion']; reports.save();
   assert.throws(() => ready(f.repo, 'demo'), /stale/i);
+});
+
+
+test('changed, removed or ignored native plan cannot reuse planning PASS', async t => {
+  const f = fixture(t); const r = await seedUpstream(f);
+  assert.equal((await route(f)).stage, 'IMPLEMENT_TASK');
+  f.write('.gitignore', 'docs/superpowers/plans/\n');
+  assert.equal((await route(f)).stage, 'IMPLEMENT_TASK');
+  f.write(r.plan.plan.path, '# Changed plan\n');
+  assert.equal((await route(f)).stage, 'PLANNING');
+  fs.unlinkSync(path.join(f.repo, r.plan.plan.path));
+  assert.equal((await route(f)).stage, 'PLANNING');
+});
+
+test('plan receipt rejects wrong skill, unexecuted status and out-of-repo paths', async t => {
+  const f = fixture(t); const r = await seedUpstream(f);
+  r.plan.invocations.planning.skill = 'bridge-planning-skill'; r.save();
+  assert.equal((await route(f)).stage, 'PLANNING');
+  r.plan.invocations = invocations(); r.plan.invocations.planning.status = 'REFERENCED'; r.save();
+  assert.equal((await route(f)).stage, 'PLANNING');
+  r.plan.invocations = invocations(); r.plan.plan.path = '../external.md'; r.save();
+  assert.equal((await route(f)).stage, 'PLANNING');
+});
+
+test('task and final reports cannot omit real delegation receipts', async t => {
+  const f = fixture(t); const r = await seedUpstream(f);
+  f.write(f.base + 'tasks.md', '- [x] 1.1 Login\n'); seedFinal(f, r.common);
+  const taskPath = path.join(f.repo, 'bridge/reports/demo/tasks/1.1.json');
+  const task = JSON.parse(fs.readFileSync(taskPath)); delete task.invocations; writeJSON(taskPath, task);
+  assert.throws(() => ready(f.repo, 'demo'), /invocation|implementation/i);
+  seedFinal(f, r.common);
+  const finalPath = path.join(f.repo, 'bridge/reports/demo/verify-report.json');
+  const final = JSON.parse(fs.readFileSync(finalPath)); delete final.invocations; writeJSON(finalPath, final);
+  assert.throws(() => ready(f.repo, 'demo'), /invocation|verification/i);
+});
+
+test('legacy bridge-only planning and ID-only mapping rewind to planning', async t => {
+  const f = fixture(t); const r = await seedUpstream(f);
+  delete r.plan.invocations; delete r.plan.plan; r.save();
+  assert.equal((await route(f)).stage, 'PLANNING');
+  r.plan.invocations = invocations(); r.plan.plan = planFile(f.repo);
+  r.plan.task_mapping = [{ task_id: '1.1' }]; r.save();
+  assert.equal((await route(f)).stage, 'PLANNING');
+});
+
+test('ignored upstream receipts cannot reuse old final evidence after replanning', async t => {
+  const f = fixture(t); f.write('.gitignore', 'bridge/reports/\ndocs/superpowers/plans/\n');
+  const r = await seedUpstream(f); f.write(f.base + 'tasks.md', '- [x] 1.1 Login\n');
+  seedFinal(f, r.common); assert.equal(ready(f.repo, 'demo').result, 'PASS');
+  r.plan.task_mapping[0].task_assertions = ['Changed acceptance criteria']; r.save();
+  assert.throws(() => ready(f.repo, 'demo'), /stale/i);
+  seedFinal(f, r.common);
+  f.write(r.plan.plan.path, '# Revised actual native plan\n');
+  r.plan.plan = (await contextAPI()).planFingerprint(f.repo, r.plan.plan.path); r.save();
+  assert.throws(() => ready(f.repo, 'demo'), /stale/i);
+});
+
+test('non-behavior tasks require explicit exemption and still require executor/review', async t => {
+  const f = fixture(t); const r = await seedUpstream(f);
+  Object.assign(r.plan.task_mapping[0], { kind: 'non_behavior', scenario_ids: [], tdd_exemption: 'Configuration-only fixture' }); r.save();
+  f.write(f.base + 'tasks.md', '- [x] 1.1 Login\n'); seedFinal(f, r.common);
+  const taskPath = path.join(f.repo, 'bridge/reports/demo/tasks/1.1.json');
+  const task = JSON.parse(fs.readFileSync(taskPath)); delete task.invocations.tdd; writeJSON(taskPath, task);
+  assert.equal(ready(f.repo, 'demo').result, 'PASS');
+  delete task.invocations.code_review; writeJSON(taskPath, task);
+  assert.throws(() => ready(f.repo, 'demo'), /code_review/i);
+  delete r.plan.task_mapping[0].tdd_exemption; r.save();
+  assert.equal((await route(f)).stage, 'PLANNING');
+});
+
+test('plan artifact CLI hashes real files and rejects native source and reports', t => {
+  const f = fixture(t); const plan = planFile(f.repo);
+  const run = file => spawnSync(process.execPath, [cliPath, 'plan-fingerprint', '--repo', f.repo, '--plan', file], { encoding: 'utf8' });
+  const result = run(plan.path); assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(JSON.parse(result.stdout), plan);
+  assert.equal(run(f.base + 'design.md').status, 1);
+  f.write('bridge/reports/demo/fake.md', '# Not a plan');
+  assert.equal(run('bridge/reports/demo/fake.md').status, 1);
 });

@@ -1,3 +1,4 @@
+import { invocations, mapping, planFile } from './helpers/flow.mjs';
 import { specFingerprint } from '../checks/context.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -147,12 +148,12 @@ test('ready requires per-task fresh evidence and actual command success', t => {
   const f = fixture(t);
   const snap = f.cli('fingerprint'); succeeds(snap);
   const fingerprint = JSON.parse(snap.stdout).fingerprint;
-  const common = { schema_version: 1, change_id: 'demo', result: 'PASS', fingerprint, checked_at: new Date().toISOString(), evidence: ['reviewed auth'], issues: [], outputs: ['report.json'], next_action: 'ARCHIVE' };
+  const common = { invocations: invocations(), schema_version: 1, change_id: 'demo', result: 'PASS', fingerprint, checked_at: new Date().toISOString(), evidence: ['reviewed auth'], issues: [], outputs: ['report.json'], next_action: 'ARCHIVE' };
   const upstream = { ...common, spec_fingerprint: specFingerprint(f.repo, 'demo').fingerprint };
   f.write('bridge/reports/demo/context-report.json', JSON.stringify({ ...upstream, stage: 'LOAD_CONTEXT' }));
-  f.write('bridge/reports/demo/planning-report.json', JSON.stringify({ ...upstream, stage: 'PLANNING', task_mapping: [{ task_id: '1.1' }] }));
+  f.write('bridge/reports/demo/planning-report.json', JSON.stringify({ ...upstream, stage: 'PLANNING', plan: planFile(f.repo), invocations: invocations(), task_mapping: mapping() }));
   f.write('bridge/reports/demo/tasks/1.1.json', JSON.stringify({ ...common, stage: 'IMPLEMENT_TASK', task_id: '1.1', scenario_ids: ['auth/Login/Valid login'], implementation_refs: ['src/login.js'], test_refs: ['test/login.js'], checks: { scenario_coverage: 'PASS', design_compliance: 'PASS', exclusion_scope: 'PASS', regression: 'PASS', code_review: 'PASS' } }));
-  const report = { ...common, stage: 'DUAL_VERIFY', tasks: ['1.1'], checks: { full_scenario_coverage: 'PASS', effective_spec_compliance: 'PASS', code_review: 'PASS' }, openspec_verify: { result: 'PASS', evidence: ['review output'] }, verification: [{ command: 'node --test', exit_code: 0, evidence: ['1 test passed'] }] };
+  const report = { ...common, stage: 'DUAL_VERIFY', tasks: ['1.1'], checks: { full_scenario_coverage: 'PASS', effective_spec_compliance: 'PASS', code_review: 'PASS' }, openspec_verify: { entry: 'openspec-verify-change', result: 'PASS', evidence: ['review output'] }, verification: [{ command: 'node --test', exit_code: 0, evidence: ['1 test passed'] }] };
   f.write('bridge/reports/demo/verify-report.json', JSON.stringify(report));
   // A task checkbox must be complete before archive can be considered.
   fails(f.cli('ready', '--change', 'demo'));

@@ -1,6 +1,6 @@
 # sdd-tdd-bridge
 
-当前版本：**2.1.1**。版本变更及升级步骤见 [CHANGELOG.md](CHANGELOG.md)。
+当前版本：**2.2.0**。版本变更及升级步骤见 [CHANGELOG.md](CHANGELOG.md)。
 
 OpenSpec 与 Superpowers 的衔接插件：六阶段 Skill、主 Agent、本地 Git 检查和最终证据校验。保留规范驱动开发与 TDD 的分工，使用可追踪的 Task—场景—验证映射衔接二者。
 
@@ -109,7 +109,7 @@ node checks/bridge.mjs uninstall --repo "/path/to/project"
 | EXPLORE | bridge-explore-skill | 原生探索交接；命名后可选 explore-report.json |
 | PROPOSAL | bridge-proposal-skill | 原生方案产物；可选 proposal-report.json |
 | LOAD_CONTEXT | bridge-load-context-skill | context-report.json：有效规范、源摘要、结构校验 |
-| PLANNING | bridge-planning-skill | planning-report.json：Task—场景—验证映射 |
+| PLANNING | bridge-planning-skill | writing-plans 原生实现计划；planning-report.json：计划引用、调用凭据与映射 |
 | IMPLEMENT_TASK | bridge-spec-compliance-check-skill | tasks/<task-id>.json：当前任务证据 |
 | DUAL_VERIFY | bridge-dual-verify-skill | verify-report.json：全量验证 |
 
@@ -203,3 +203,22 @@ node bridge/checks/bridge.mjs spec-fingerprint --repo . --change my-change
 代理语义依据 [OpenSpec explore](https://github.com/Fission-AI/OpenSpec/blob/main/docs/explore.md) 和 [原生 Skills](https://github.com/Fission-AI/OpenSpec/blob/main/docs-lab/reference/skills.md)，具体可用入口以宿主发现结果为准。
 
 最终工作区摘要包含 context-report.json 和 planning-report.json，绑定有效规范解释和计划内容；其他阶段报告仍排除以避免写报告使自身失效。生成或修改上下文/计划后，重新获取工作区摘要并真实重审下游证据。
+
+
+## Superpowers 的实际委托与计划
+
+Bridge 负责交接与核验，原生能力负责专业工作。PROPOSAL 后先 LOAD_CONTEXT，再通过 bridge-planning-skill **实际执行 writing-plans**，产出真实 Markdown 实现计划；默认目录遵循当前宿主的 writing-plans，用户路径偏好优先。`planning-report.json` 只记录计划引用与追踪映射，不能替代计划。
+
+执行阶段实际调用 subagent-driven-development 或 executing-plans；行为实现使用 test-driven-development。每个 Task 先由 Bridge 做规范检查，再由 requesting-code-review 执行独立质量审查。最终再次进行独立全差异代码审查，调用 verification-before-completion 和原生 OpenSpec verify，ready 通过后才在用户授权内归档。原生 finishing 分支不能提前结束 Bridge 或自动获得提交/推送权限。
+
+```sh
+node bridge/checks/bridge.mjs plan-fingerprint --repo . --plan docs/superpowers/plans/my-change.md
+```
+
+将该命令输出保存为 planning 报告的 `plan`（path/sha256），同时记录 `invocations.planning` 的实际 Skill、PASS 和非空执行证据。任务报告记录 implementation、code_review；行为任务还记录 tdd；最终报告记录 verification 和 code_review，openspec_verify 还需 entry。模板仍默认 BLOCKED，不能将示例凭据复制为真实结果。
+
+任务映射必须有 plan_anchor、需求、任务断言、文件与验证命令，不能只有 Task ID。`kind=behavior` 要有场景；`kind=non_behavior` 需说明 tdd_exemption，可使用文档/配置/移除等适用验证。计划直接读取核对摘要；删除或修改回到 PLANNING，即使被 Git 忽略也有效。context/planning 报告强制参与最终摘要，避免忽略报告后复用旧验证。
+
+升级时更新完整 runtime、Skill 和模板，旧版没有原生计划或调用凭据的报告需真实重新规划/审查。计划必须是仓库内独立 Markdown 文件，不能使用 OpenSpec 源文件或 Bridge 报告冒充；仓库外保存偏好需经用户允许保留仓库内校验副本。Skill 缺失按共享契约提供 Superpowers 安装/重载步骤，保持 BLOCKED，不自造替代能力。原生调用凭据是 Agent 的可审查记录，CLI 不证明其真实性。
+
+OpenSpec core 初始化后可能仍无 verify：使用 `openspec config profile` 启用 verify，再在项目运行 `openspec update`，重载宿主确认入口。CLI validate 不能代替语义 verify。此行为依据 [OpenSpec 支持工具说明](https://github.com/Fission-AI/OpenSpec/blob/main/docs/supported-tools.md)。Superpowers 的安装与各阶段职责参考 [官方说明](https://github.com/obra/superpowers)。

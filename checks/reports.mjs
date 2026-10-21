@@ -9,3 +9,12 @@ export function assertReport(report, expected) {
   if (typeof report.next_action !== 'string' || !report.next_action.trim()) throw new Error('Report lacks next_action');
   if (!Array.isArray(report.issues) || report.issues.length) throw new Error('Passing report must have no unresolved issues');
 }
+
+export function stringList(value, nonempty = true) {
+  return Array.isArray(value) && (!nonempty || value.length > 0) && value.every(s => typeof s === 'string' && s.trim());
+}
+export function requireInvocation(report, role, skills) {
+  const invocation = report.invocations?.[role];
+  const skill = invocation?.skill;
+  if (invocation?.status !== 'PASS' || typeof skill !== 'string' || !skills.includes(skill.split(':').at(-1)) || !stringList(invocation.evidence)) throw new Error(`Missing executed ${role} invocation (${skills.join(' or ')})`);
+}

@@ -1,3 +1,4 @@
+import { invocations, mapping, planFile } from './helpers/flow.mjs';
 import { specFingerprint } from '../checks/context.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -24,13 +25,13 @@ function fixture(t) {
   return { repo, base, write };
 }
 function passingEvidence(f) {
-  const common = { schema_version: 1, change_id: 'demo', result: 'PASS', fingerprint: fingerprint(f.repo).fingerprint, checked_at: new Date().toISOString(), evidence: ['actual verification log'], issues: [], outputs: ['report.json'], next_action: 'ARCHIVE' };
+  const common = { invocations: invocations(), schema_version: 1, change_id: 'demo', result: 'PASS', fingerprint: fingerprint(f.repo).fingerprint, checked_at: new Date().toISOString(), evidence: ['actual verification log'], issues: [], outputs: ['report.json'], next_action: 'ARCHIVE' };
   const upstream = { ...common, spec_fingerprint: specFingerprint(f.repo, 'demo').fingerprint };
   writeJSON(path.join(f.repo, 'bridge/reports/demo/context-report.json'), { ...upstream, stage: 'LOAD_CONTEXT' });
-  writeJSON(path.join(f.repo, 'bridge/reports/demo/planning-report.json'), { ...upstream, stage: 'PLANNING', task_mapping: [{ task_id: '1.1' }] });
+  writeJSON(path.join(f.repo, 'bridge/reports/demo/planning-report.json'), { ...upstream, stage: 'PLANNING', plan: planFile(f.repo), invocations: invocations(), task_mapping: mapping() });
   common.fingerprint = fingerprint(f.repo).fingerprint;
   const task = { ...common, stage: 'IMPLEMENT_TASK', task_id: '1.1', scenario_ids: ['auth/Login/Login'], implementation_refs: ['src/login.js'], test_refs: ['test/login.js'], checks: Object.fromEntries(['scenario_coverage', 'design_compliance', 'exclusion_scope', 'regression', 'code_review'].map(k => [k, 'PASS'])) };
-  const final = { ...common, stage: 'DUAL_VERIFY', tasks: ['1.1'], checks: Object.fromEntries(['full_scenario_coverage', 'effective_spec_compliance', 'code_review'].map(k => [k, 'PASS'])), openspec_verify: { result: 'PASS', evidence: ['verified'] }, verification: [{ command: 'node --test', exit_code: 0, evidence: ['1 passed'] }] };
+  const final = { ...common, stage: 'DUAL_VERIFY', tasks: ['1.1'], checks: Object.fromEntries(['full_scenario_coverage', 'effective_spec_compliance', 'code_review'].map(k => [k, 'PASS'])), openspec_verify: { entry: 'openspec-verify-change', result: 'PASS', evidence: ['verified'] }, verification: [{ command: 'node --test', exit_code: 0, evidence: ['1 passed'] }] };
   return { task, final, save() { writeJSON(path.join(f.repo, 'bridge/reports/demo/tasks/1.1.json'), task); writeJSON(path.join(f.repo, 'bridge/reports/demo/verify-report.json'), final); } };
 }
 
@@ -112,6 +113,7 @@ test('audit R2: packaged artifact installs, validates and registers its agent', 
   run(path.join(f.repo, 'bridge/checks/bridge.mjs'), 'route', '--change', 'demo');
   run(path.join(f.repo, 'bridge/checks/bridge.mjs'), 'spec-fingerprint', '--change', 'demo');
   for (const name of ['explore', 'proposal']) assert.ok(fs.existsSync(path.join(root, `skills/bridge-${name}-skill/SKILL.md`)));
+  run(path.join(f.repo, 'bridge/checks/bridge.mjs'), 'plan-fingerprint', '--plan', planFile(f.repo).path);
   run(cli, 'uninstall');
   const { SddTddBridgePlugin } = await import(pathToFileURL(path.join(root, '.opencode/plugins/sdd-tdd-bridge.js')));
   const config = {}; await (await SddTddBridgePlugin({})).config(config);

@@ -35,7 +35,7 @@
 
 tasks.md 使用带稳定 ID 的 checkbox：`- [ ] 1.1 实现登录`。保留现有稳定 ID，禁止为绕过审查删除任务。
 
-planning-report.json 保存：
+planning-report.json 是原生计划的追踪/验收报告，不是实现计划；保存：
 
 ```json
 {
@@ -43,6 +43,7 @@ planning-report.json 保存：
     {
       "task_id": "1.1",
       "kind": "behavior",
+      "plan_anchor": "Task 1 — OpenSpec 1.1",
       "requirement_ids": ["auth/Login"],
       "scenario_ids": ["auth/Login/Valid login"],
       "task_assertions": ["签发函数返回可验证的令牌"],
@@ -65,7 +66,7 @@ requirement/scenario 的 ID 优先使用上游显式 ID，否则使用 capabilit
 
 任务审查只覆盖 planning 中当前 task_id 的 task_assertions、可独立完成的场景及共享约束，并检查对已有功能的回归；不因未来任务尚未实现而失败。跨任务场景单独放入 deferred_integration，列出责任任务和最终验证，不把完整集成场景重复加入各任务的独立验收清单。当前片段验收不等于整个集成场景通过；只有 DUAL_VERIFY 可以把 deferred_integration 标记为完成。未知任务关联应回到 PLANNING，不能自行扩大或缩小范围。最终 DUAL_VERIFY 检查全部有效需求、全部场景、全部任务及全部延后集成项，不能静默遗漏。
 
-机器可读报告为 JSON；Markdown 可作为额外的人类阅读摘要，不作为闸门输入。路径：
+机器可读报告为 JSON；报告的 Markdown 汇总可作为额外的人类阅读摘要，不作为闸门输入；真实 Markdown 实现计划按 plan 摘要参与门禁。路径：
 
 - bridge/reports/<change>/context-report.json
 - bridge/reports/<change>/planning-report.json
@@ -126,3 +127,27 @@ Codex 已有 CLI、未初始化时，面向用户的提示示例：
 > 当前停在 PROPOSAL：本机已有 OpenSpec CLI，但当前项目尚未发现原生方案 Skill。请在目标项目根目录运行 `openspec init --tools codex --profile core`，随后重载项目或开启新会话。确认可发现 `openspec-propose` 后，可说“继续刚才的 Bridge 方案阶段”；已明确的需求范围保持不变。若初始化提示不支持参数，先升级 OpenSpec CLI 再重试。
 
 官方依据（核对日期：2026-10-21）：[安装](https://github.com/Fission-AI/OpenSpec/blob/main/docs/installation.md)、[init/update CLI](https://github.com/Fission-AI/OpenSpec/blob/main/docs/cli.md)、[宿主 ID、生成路径与调用方式](https://github.com/Fission-AI/OpenSpec/blob/main/docs/supported-tools.md)。上游文档更新时重新核对，不能将该日期的路径当成所有版本通用约定。
+
+## 原生能力委托、计划文件与凭据
+
+所有阶段必须实际执行相应宿主能力，不得把名称引用、参考步骤、读完后自造替代产物视为执行。宿主有专门 Skill 加载工具时使用它；否则按宿主支持方式加载并完整执行该 Skill，而非仅阅读。Bridge 不重新实现外部专业流程。
+
+- EXPLORE/PROPOSAL：原生 OpenSpec；无变更名可在对话交接，不为证明历史强制补报告。
+- PLANNING：实际 writing-plans 创建 Markdown 实现计划并自查，Bridge 核验 task_mapping。报告不替代计划，OpenSpec tasks.md 不替代原生实现计划。
+- IMPLEMENT_TASK：实际 subagent-driven-development 或 executing-plans；行为任务实际 test-driven-development。先 Bridge 规范检查，再原生 requesting-code-review 独立审查；只有综合任务报告 PASS 才继续。
+- DUAL_VERIFY：最终独立 requesting-code-review、实际 verification-before-completion 和原生 OpenSpec verify；项目验证命令不能成为跳过 Skill 的替代选项。
+- ARCHIVE：ready PASS 后且用户授权包含归档才调用原生入口；执行技能的 finishing 流程不能绕过该出口。
+
+公共调用凭据结构为 `invocations.<role> = {"skill":"superpowers:writing-plans","status":"PASS","evidence":["实际会话执行记录和产物引用"]}`。真实名称可含宿主命名空间，不能填 Bridge Skill 替代。PLANNING 要求 planning；Task 要求 implementation、code_review，behavior 还要求 tdd；最终报告要求 verification、code_review。记录工具/加载入口、执行结果和证据位置；CLI 只核对结构，不能证明宿主执行真实性，不得伪造调用。用户明确要求替代专业流程时应先声明偏离 Bridge 标准流程，不能给该标准流程签发 PASS。
+
+planning-report 额外要求 `plan = {"path":"docs/superpowers/plans/实际计划.md","sha256":"真实文件字节摘要"}`。用 `node bridge/checks/bridge.mjs plan-fingerprint --repo . --plan <仓库内相对路径>` 获取。遵循真实 writing-plans 路径偏好；不能拿 OpenSpec 源或 bridge/reports 下的报告冒充实现计划。仓库外计划需要用户允许的仓库内校验副本，不能静默覆盖偏好。直接检查文件（包括 Git 忽略的计划）；修改、删除或摘要不符回到 PLANNING，保留历史报告，不只刷新摘要。
+
+每项 task_mapping 必须含 kind、plan_anchor、非空 requirement_ids/task_assertions/implementation_files/verification，verification 每项含 command/test_ref。kind=behavior 需非空 scenario_ids；kind=non_behavior 可以没有场景但必须给 tdd_exemption。deferred_integration 的 owner_tasks 必须存在且含当前任务。语义完整性仍由实际审查负责。旧版只有任务 ID 或无原生计划/调用凭据的报告必须重新规划，最终 Task/verify 缺新凭据则真实重审。
+
+### Superpowers 能力缺失的恢复
+
+先确认实际宿主是否发现 writing-plans、执行 Skill、test-driven-development、requesting-code-review、verification-before-completion，缺哪个说明哪个，保持当前阶段 BLOCKED；不要用现成 Bridge JSON、普通测试或自查充当替代。Codex App 可在插件管理中安装/启用 Superpowers，Codex CLI 用其插件搜索界面；Claude Code 可在会话中使用 `/plugin install superpowers@claude-plugins-official`。其他宿主按 [Superpowers 官方 README 安装章节](https://github.com/obra/superpowers#installation) 操作，不猜全局路径或过时 bootstrap 命令。完成后重载/新会话并重新发现能力。指引核对日期 2026-10-21；提供恢复指引不等于自动获得全局安装授权。
+
+OpenSpec core profile 含 explore/propose，但不保证 verify。需要 verify 时按官方 [支持工具说明](https://github.com/Fission-AI/OpenSpec/blob/main/docs/supported-tools.md) 运行 `openspec config profile` 选择 verify，再 `openspec update` 并重载，实际发现后继续；不把 CLI validate 视为语义 verify。
+
+上游 context/planning 报告即使被 Git 忽略仍强制参与最终摘要。实际计划通过直接读取的 plan 摘要核对；重新规划或映射变化必须真实重审后续证据，不能用新计划配旧 Task/verify PASS。原生代码审查交接必须包含实际变更基线、HEAD、已暂存/未暂存差异与未跟踪实现文件，不能因用户未授权提交而漏审未提交内容。

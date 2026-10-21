@@ -12,5 +12,16 @@
   ],
   "outputs": [],
   "next_action": "执行真实阶段并填写证据",
-  "task_mapping": []
+  "task_mapping": [],
+  "invocations": {
+    "planning": {
+      "skill": null,
+      "status": "NOT_RUN",
+      "evidence": []
+    }
+  },
+  "plan": {
+    "path": null,
+    "sha256": null
+  }
 }

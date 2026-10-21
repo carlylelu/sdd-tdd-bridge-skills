@@ -1,12 +1,16 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { changeName, git, readJSON, tasks } from './lib.mjs';
-import { assertReport } from './reports.mjs';
+import { changeName, git, readJSON, tasks, assertManagedPaths, formatCheck, activeChanges } from './lib.mjs';
+import { assertReport, requireInvocation } from './reports.mjs';
 import { requireUpstreamReports } from './context.mjs';
 
 export function fingerprint(repo) {
-  const files = [...new Set(git(repo, 'ls-files', '--cached', '--others', '--exclude-standard', '-z').split('\0').filter(Boolean))]
+  const listed = git(repo, 'ls-files', '--cached', '--others', '--exclude-standard', '-z').split('\0').filter(Boolean);
+  // These are gate inputs even when the project intentionally ignores reports.
+  const required = activeChanges(listed).flatMap(change => ['context', 'planning'].map(stage => `bridge/reports/${change}/${stage}-report.json`));
+  assertManagedPaths(repo, required);
+  const files = [...new Set([...listed, ...required.filter(file => fs.existsSync(path.join(repo, file)))])]
     .filter(f => (!f.startsWith('bridge/reports/') || /^bridge\/reports\/[^/]+\/(?:context|planning)-report\.json$/.test(f)) && !f.startsWith('.bridge-hooks/') && f !== 'bridge/install-state.json').sort();
   const hash = crypto.createHash('sha256');
   for (const file of files) {
@@ -31,22 +35,31 @@ function requireChecks(report, names) {
 }
 export function ready(repo, change) {
   changeName(change);
-  requireUpstreamReports(repo, change);
+  formatCheck(repo, { change });
+  const upstream = requireUpstreamReports(repo, change);
   const base = path.join(repo, 'bridge/reports', change);
   const taskList = tasks(fs.readFileSync(path.join(repo, 'openspec/changes', change, 'tasks.md'), 'utf8'));
   if (taskList.some(t => !t.done)) throw new Error('All tasks must be completed before archive');
   const current = fingerprint(repo).fingerprint;
   for (const task of taskList) {
+    assertManagedPaths(repo, [`bridge/reports/${change}/tasks/${task.id}.json`]);
     const report = readJSON(path.join(base, 'tasks', `${task.id}.json`));
+    requireInvocation(report, 'implementation', ['executing-plans', 'subagent-driven-development']);
+    requireInvocation(report, 'code_review', ['requesting-code-review']);
+    const mapping = upstream.planning.task_mapping.find(m => m.task_id === task.id);
+    if (mapping.kind === 'behavior') requireInvocation(report, 'tdd', ['test-driven-development']);
     passingReport(report, { stage: 'IMPLEMENT_TASK', change_id: change, task_id: task.id }, current);
     for (const field of ['scenario_ids', 'implementation_refs', 'test_refs']) if (!Array.isArray(report[field]) || report[field].some(value => typeof value !== 'string' || !value.trim())) throw new Error(`Task report ${field} must be a string array`);
     requireChecks(report, ['scenario_coverage', 'design_compliance', 'exclusion_scope', 'regression', 'code_review']);
   }
+  assertManagedPaths(repo, [`bridge/reports/${change}/verify-report.json`]);
   const report = readJSON(path.join(base, 'verify-report.json'));
+  requireInvocation(report, 'verification', ['verification-before-completion']);
+  requireInvocation(report, 'code_review', ['requesting-code-review']);
   passingReport(report, { stage: 'DUAL_VERIFY', change_id: change }, current);
   if (!Array.isArray(report.tasks) || report.tasks.length !== taskList.length || new Set(report.tasks).size !== taskList.length || taskList.some(t => !report.tasks.includes(t.id))) throw new Error('Final report must cover exactly all tasks');
   requireChecks(report, ['full_scenario_coverage', 'effective_spec_compliance', 'code_review']);
-  if (report.openspec_verify?.result !== 'PASS' || !nonemptyEvidence(report.openspec_verify.evidence)) throw new Error('OpenSpec verification missing or failed');
+  if (typeof report.openspec_verify?.entry !== 'string' || !report.openspec_verify.entry.trim() || report.openspec_verify.result !== 'PASS' || !nonemptyEvidence(report.openspec_verify.evidence)) throw new Error('OpenSpec verification missing or failed');
   if (!Array.isArray(report.verification) || !report.verification.length || report.verification.some(v => typeof v.command !== 'string' || !v.command.trim() || v.exit_code !== 0 || !nonemptyEvidence(v.evidence))) throw new Error('Verification commands must have exit_code 0 and evidence');
   return { result: 'PASS', change_id: change, fingerprint: current, task_count: taskList.length, next_action: 'Archive using the host OpenSpec integration' };
 }

@@ -22,3 +22,10 @@ Comprehensive follow-up: ../../audit/2026-10-19-review.md records five rounds, a
 ## Full lifecycle extension (2026-10-19)
 
 Separate source and workspace freshness: code edits should not force requirement replanning, while task progress must not invalidate spec context. Normalize task checkbox progress only in the spec hash; retain raw bytes in the final workspace hash. Require fresh context/planning at archive as well as during routing so new final reports cannot bypass stale upstream interpretation. Existing native artifacts bypass optional exploration/proposal receipts. Proxy skills must discover and delegate native host capabilities, never emulate slash commands in shell.
+
+
+## Native delegation and artifact ownership (2026-10-21)
+
+Do not optimize away a native skill's actual output by calling Bridge JSON an equivalent plan. Native writing-plans authors a real implementation plan, while Bridge verifies coverage and tracks its path/hash. Invocation receipts are audit records, not authenticity proofs. Require explicit native executor/TDD/review/verification roles, spec-before-quality sequencing and final routing even when an executor offers branch finishing. Project verification commands are inputs to native verification, not a replacement for it.
+
+Gate inputs cannot depend on incidental Git visibility. Context/planning reports that determine plan semantics must be fingerprinted even when reports are ignored. Read the plan directly and compare its SHA-256; if it is updated and reapproved, the changed planning receipt must still invalidate old task/final evidence. Use explicit non-behavior exemptions rather than silently dropping TDD requirements. Full audit evidence: ../../audit/2026-10-21-flow-control.md.
