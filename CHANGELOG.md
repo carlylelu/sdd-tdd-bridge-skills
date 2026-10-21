@@ -1,5 +1,12 @@
 # 版本日志
 
+## [2.1.1] - 2026-10-21
+
+- 原生 OpenSpec Skill 缺失时提供按宿主区分的安装、项目 init、更新和重载指引，避免只返回 BLOCKED 或默认建议底层 CLI 绕过。
+- 根据 2026-10-21 官方文档补充 Node.js 要求、core profile、Codex Skills 路径和恢复条件。
+
+- 验证：五个恢复提示场景通过；真实打包安装与 OpenCode 注册检查通过。未执行真实宿主 OpenSpec 初始化。
+
 ## [2.1.0] - 2026-10-19
 
 - 新增原生 OpenSpec explore/proposal 代理和六 Skill 全流程入口。
@@ -64,6 +71,7 @@
 
 - 初始版本：OpenSpec–Superpowers 主 Agent、四阶段 Skill、Bash 格式及提交消息检查、Git Hook 模板和多宿主插件清单。
 
-[2.1.0]: https://github.com/carlylelu/sdd-tdd-bridge-skills/compare/fa7899b...main
+[2.1.1]: https://github.com/carlylelu/sdd-tdd-bridge-skills/compare/b3daf54...main
+[2.1.0]: https://github.com/carlylelu/sdd-tdd-bridge-skills/compare/fa7899b...b3daf54
 [2.0.0]: https://github.com/carlylelu/sdd-tdd-bridge-skills/compare/aabc26d...fa7899b
 [1.0.0]: https://github.com/carlylelu/sdd-tdd-bridge-skills/commit/aabc26d

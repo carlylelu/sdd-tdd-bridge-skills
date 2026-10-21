@@ -1,6 +1,6 @@
 # sdd-tdd-bridge
 
-当前版本：**2.1.0**。版本变更及升级步骤见 [CHANGELOG.md](CHANGELOG.md)。
+当前版本：**2.1.1**。版本变更及升级步骤见 [CHANGELOG.md](CHANGELOG.md)。
 
 OpenSpec 与 Superpowers 的衔接插件：六阶段 Skill、主 Agent、本地 Git 检查和最终证据校验。保留规范驱动开发与 TDD 的分工，使用可追踪的 Task—场景—验证映射衔接二者。
 
@@ -23,6 +23,34 @@ OpenSpec 与 Superpowers 的衔接插件：六阶段 Skill、主 Agent、本地 
 - Git Hooks 需要 POSIX sh（Windows 使用 Git for Windows 自带环境）。直接调用 Node CLI 不需要 Bash。
 - 宿主已安装 OpenSpec 与 Superpowers，且可发现六个 bridge Skill。宿主命令及命名空间以实际环境为准。
 - 可从原始想法开始，由原生 explore/propose 形成产物；已有完整 proposal.md、design.md、tasks.md 和 specs/ 时直接进入下游，无需重复上游工序。
+
+## 首次配置 OpenSpec（避免缺少原生 Skill）
+
+安装 Bridge 不会替目标项目执行 OpenSpec 初始化。CLI 已安装但找不到 `openspec-propose` 时，通常需要为当前宿主生成项目 Skills。
+
+仅当 CLI 缺失或过旧时安装/升级（OpenSpec 目前要求 Node.js >=20.19.0）：
+
+```sh
+node --version
+npm install -g @fission-ai/openspec@latest
+openspec --version
+```
+
+已有可用 CLI 则跳过安装。在**目标项目根目录**，根据宿主选择一条：
+
+```sh
+openspec init --tools codex --profile core
+# Claude Code：openspec init --tools claude --profile core
+# OpenCode：openspec init --tools opencode --profile core
+# Cursor：openspec init --tools cursor --profile core
+# Gemini CLI：openspec init --tools gemini --profile core
+```
+
+不确定宿主 ID 时运行交互式 `openspec init` 选择工具，不猜 ID。已初始化且仅指令过旧时运行 `openspec update`；CLI 过旧先升级。未选当前宿主或缺少 core 工序时，仍使用上面的 init 命令补齐。保留原规范与草稿，不使用 `--force` 覆盖冲突。
+
+完成后按宿主方式重载项目或开启新会话，确认发现 `openspec-explore`、`openspec-propose`，再说“继续刚才的 Bridge 流程”。当前官方 Codex 生成路径为 `.agents/skills/openspec-*/SKILL.md`，旧版以实际输出为准；生成文件不等于当前会话已加载。安装/初始化尚未成功时，Bridge 保持 BLOCKED 并说明具体恢复步骤。
+
+指引核对于 2026-10-21，来源：[官方安装说明](https://github.com/Fission-AI/OpenSpec/blob/main/docs/installation.md)、[CLI](https://github.com/Fission-AI/OpenSpec/blob/main/docs/cli.md)、[支持的宿主](https://github.com/Fission-AI/OpenSpec/blob/main/docs/supported-tools.md)。
 
 ## 安装：宿主能力与仓库检查分别启用
 

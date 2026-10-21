@@ -99,3 +99,30 @@ context-report.json 和 planning-report.json 必须含当前 `spec_fingerprint`�
 可选上游报告路径为 bridge/reports/<change>/explore-report.json 和 proposal-report.json。没有变更名时探索只在对话交接，不创建报告目录。这些报告不作为下游必需凭据。路由输出 decision_only=true 只表示建议，不能当成执行或语义通过证据。工具缺失返回 BLOCKED，语义歧义交给用户决定后再调用原生更新入口。
 
 最终工作区摘要包含 context-report.json 和 planning-report.json，绑定有效规范解释和计划内容；其他阶段报告仍排除以避免写报告使自身失效。生成或修改上下文/计划后，重新获取工作区摘要并真实重审下游证据。
+
+## OpenSpec 原生能力缺失时的恢复指引
+
+CLI 已安装不等于当前项目已初始化宿主 Skills。EXPLORE / PROPOSAL 找不到原生入口时，保持当前阶段 BLOCKED，并优先给出以下可执行恢复步骤，不能只说“安装对应 Skill”，也不默认建议授权使用 new/instructions/validate 代替原生工序。
+
+1. 检查 `node --version`、`openspec --version`，区分命令不存在、CLI 过旧、项目未配置当前宿主、或已生成但本次会话未加载。OpenSpec 官方当前要求 Node.js >=20.19.0（Bridge 自身运行时要求仍为 >=20）。检查命令执行失败不等于一定未安装，报告实际错误。
+2. **仅 CLI 缺失或版本过旧时**，提示安装或升级：`npm install -g @fission-ai/openspec@latest`，随后 `openspec --version`。已有可用 CLI 不要求重复安装；安装失败时展示错误与官方安装链接，不把失败当成功。
+3. **项目尚未为当前宿主生成能力时**，在用户的目标项目根目录执行初始化，而非 Bridge 插件目录。已确认宿主时必须提供展开后的命令，不留下 `xxxxx` 占位符：
+
+   | 当前宿主 | 初始化命令 |
+   |---|---|
+   | Codex | `openspec init --tools codex --profile core` |
+   | Claude Code | `openspec init --tools claude --profile core` |
+   | OpenCode | `openspec init --tools opencode --profile core` |
+   | Cursor | `openspec init --tools cursor --profile core` |
+   | Gemini CLI | `openspec init --tools gemini --profile core` |
+
+   core 包含 explore/propose。其他宿主从官方 Supported Tools 查询准确 ID；无法确认时给出交互式 `openspec init` 并让用户选择当前工具，不猜测 CodeFree 等名称对应的 ID，不默认 `--tools all` 或 `--force`。明确保留项目现有规范与草稿；不自动覆盖冲突文件。
+4. **已初始化但指令过旧时**，提示 `openspec update`；若安装的 CLI 本身过旧，先升级 CLI 再 update。项目已初始化但未选择当前宿主，或 profile 不含所需工序时，仍按第 3 步为当前宿主运行带 `--profile core` 的 init；不要只依赖 update 补选宿主。旧 CLI 不支持所列参数时先引导升级，不编造兼容参数。
+5. 初始化/更新后检查命令的真实输出与生成路径，并提示按宿主方式重载项目或开启新会话，再发现 `openspec-explore` / `openspec-propose`。当前官方 Codex 路径是 `.agents/skills/openspec-*/SKILL.md`，旧版本可能使用不同路径，以实际 CLI 输出为准；文件存在不等于已加载。Codex 的 `$openspec-propose` 是会话 Skill 引用，不是 shell 命令。
+6. 只有真实发现并可调用所需原生能力后才解除 BLOCKED，保留已明确的需求范围，从原阶段继续。初始化和安装会修改环境或项目：本段默认提供指引；用户已明确授权配置时可执行，否则不把业务实现授权自动扩大为全局安装授权。不要为了补依赖修改业务代码、伪造 PASS 或新增方案产物。
+
+Codex 已有 CLI、未初始化时，面向用户的提示示例：
+
+> 当前停在 PROPOSAL：本机已有 OpenSpec CLI，但当前项目尚未发现原生方案 Skill。请在目标项目根目录运行 `openspec init --tools codex --profile core`，随后重载项目或开启新会话。确认可发现 `openspec-propose` 后，可说“继续刚才的 Bridge 方案阶段”；已明确的需求范围保持不变。若初始化提示不支持参数，先升级 OpenSpec CLI 再重试。
+
+官方依据（核对日期：2026-10-21）：[安装](https://github.com/Fission-AI/OpenSpec/blob/main/docs/installation.md)、[init/update CLI](https://github.com/Fission-AI/OpenSpec/blob/main/docs/cli.md)、[宿主 ID、生成路径与调用方式](https://github.com/Fission-AI/OpenSpec/blob/main/docs/supported-tools.md)。上游文档更新时重新核对，不能将该日期的路径当成所有版本通用约定。

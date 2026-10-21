@@ -12,3 +12,5 @@ description: 在需要代理 OpenSpec 原生Proposal工序时使用；对应 PRO
 交接探索结论、需求边界、已有产物及缺失项。由 OpenSpec 按依赖生成或更新 proposal、design、tasks 和 delta specs。只处理上游产物，不实现业务代码。遇到尚未授权的产品或架构取舍，展示具体选项请用户决定；普通补齐不重复审批。
 
 完成后运行 `node bridge/checks/bridge.mjs format --repo . --change <change>`，审查产物语义和用户意图。文件存在和格式 PASS 不能代替语义审查。记录真实原生入口、输出、文件清单及 spec-fingerprint 结果；可保存 proposal-report.json。仅方案请求到此停止；端到端授权时进入 LOAD_CONTEXT。修改上游后历史下游报告保留但失效，必须重新解析和规划，禁止只替换旧报告摘要。
+
+原生能力缺失时，必须按共享契约的“OpenSpec 原生能力缺失时的恢复指引”区分 CLI 安装与项目初始化，并向用户输出当前宿主的具体 `openspec init --tools … --profile core` 命令、目标项目根目录和重载后恢复步骤。已有可用 CLI 不要求重复安装，版本过旧则先升级；不只报告 BLOCKED，也不默认提供底层 CLI 绕过方案。

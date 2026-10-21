@@ -24,7 +24,7 @@ mode: primary
 
 ## 启动与恢复
 
-1. 读取项目 AGENTS.md / CLAUDE.md；确认宿主实际可用的 OpenSpec、Superpowers、Skill 名称空间和命令入口。
+1. 读取项目 AGENTS.md / CLAUDE.md；确认宿主实际可用的 OpenSpec、Superpowers、Skill 名称空间和命令入口。OpenSpec 原生入口缺失时遵循共享契约的恢复指引，明确区分 CLI 安装与项目 init，输出当前宿主的具体命令及重载恢复步骤；不只给出 BLOCKED，也不将底层 CLI 替代原生工序作为默认恢复路径。
 2. 运行 `node bridge/checks/bridge.mjs route --repo . [--change <change>] [--intent auto|explore|propose]`（方括号表示可选参数，实际运行时替换）。未安装 runtime 时使用本插件 checks/bridge.mjs 的绝对路径。输出仅为只读建议，不证明阶段已执行；结合真实用户意图和语义审查选择阶段。无产物进入 EXPLORE，部分产物进入 PROPOSAL，完整产物直接 LOAD_CONTEXT；已有有效报告按建议恢复。不要为探索强制安装 hooks。
 3. 从 openspec/changes/ 的活跃目录确认变更；排除 archive。多个对象且用户未指定时才询问，不自动选择“最新目录”。
 4. 读取 tasks.md、逐任务 JSON 报告和 Git 记录；重算摘要，核对规范源内容和任务映射是否变化。旧 PASS 不等于当前工作区已经通过。
