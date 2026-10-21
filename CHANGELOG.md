@@ -1,5 +1,12 @@
 # 版本日志
 
+## [2.2.1] - 2026-10-21
+
+- 六个 Skill 和主 Agent 统一优先解析当前插件包内检查器，始终显式传入业务项目绝对路径；修复 LOAD_CONTEXT 在未 install 项目中查找不到 bridge.mjs 的问题。
+- 新增只读 runtime 预检；区分检查器可用性与可选项目 Hook 安装，不再将未安装 Hook 作为业务实现的默认阻塞条件。
+- OpenCode 注入实际插件检查器路径；补齐手动安装完整包恢复说明，禁止吞退出码或以 OpenSpec validate 替代 Bridge 检查。
+- 验证：77 项测试中 76 通过、0 失败、1 项 POSIX 环境跳过；无项目 install、路径含空格和旧运行时场景通过，六个路径恢复压力场景通过。
+
 ## [2.2.0] - 2026-10-21
 
 - 修复 PLANNING 自建 Bridge 报告替代 Superpowers writing-plans：强制真实原生计划、路径/摘要与调用凭据。
@@ -86,7 +93,8 @@
 
 - 初始版本：OpenSpec–Superpowers 主 Agent、四阶段 Skill、Bash 格式及提交消息检查、Git Hook 模板和多宿主插件清单。
 
-[2.2.0]: https://github.com/carlylelu/sdd-tdd-bridge-skills/compare/57e9d9d...main
+[2.2.1]: https://github.com/carlylelu/sdd-tdd-bridge-skills/compare/8a8c805...main
+[2.2.0]: https://github.com/carlylelu/sdd-tdd-bridge-skills/compare/57e9d9d...8a8c805
 [2.1.1]: https://github.com/carlylelu/sdd-tdd-bridge-skills/compare/b3daf54...57e9d9d
 [2.1.0]: https://github.com/carlylelu/sdd-tdd-bridge-skills/compare/fa7899b...b3daf54
 [2.0.0]: https://github.com/carlylelu/sdd-tdd-bridge-skills/compare/aabc26d...fa7899b

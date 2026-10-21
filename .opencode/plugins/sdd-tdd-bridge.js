@@ -25,7 +25,8 @@ export const SddTddBridgePlugin = async () => {
   const skillsDir = path.resolve(__dirname, '../../skills');
   const agent = await fs.readFile(path.resolve(__dirname, '../../agents/bridge_agent.md'), 'utf8');
   const contract = await fs.readFile(path.join(skillsDir, 'bridge-load-context-skill/references/workflow.md'), 'utf8');
-  const prompt = agent.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, '') + '\n\n' + contract;
+  const runtimeContext = '\n\nBridge checker from the currently loaded plugin (JSON-encoded absolute path): ' + JSON.stringify(path.resolve(__dirname, '../../checks/bridge.mjs')) + '\nUse this checker for every stage; pass the target project absolute root as --repo. Run runtime preflight before format/spec-fingerprint. Hook installation is optional and separate.\n';
+  const prompt = agent.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, '') + '\n\n' + contract + runtimeContext;
 
   return {
     config: async (config) => {

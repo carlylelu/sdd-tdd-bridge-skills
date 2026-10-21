@@ -25,11 +25,11 @@ mode: primary
 ## 启动与恢复
 
 1. 读取项目 AGENTS.md / CLAUDE.md；确认宿主实际可用的 OpenSpec、Superpowers、Skill 名称空间和命令入口。OpenSpec 原生入口缺失时遵循共享契约的恢复指引，明确区分 CLI 安装与项目 init，输出当前宿主的具体命令及重载恢复步骤；不只给出 BLOCKED，也不将底层 CLI 替代原生工序作为默认恢复路径。
-2. 运行 `node bridge/checks/bridge.mjs route --repo . [--change <change>] [--intent auto|explore|propose]`（方括号表示可选参数，实际运行时替换）。未安装 runtime 时使用本插件 checks/bridge.mjs 的绝对路径。输出仅为只读建议，不证明阶段已执行；结合真实用户意图和语义审查选择阶段。无产物进入 EXPLORE，部分产物进入 PROPOSAL，完整产物直接 LOAD_CONTEXT；已有有效报告按建议恢复。不要为探索强制安装 hooks。
+2. 先按共享契约绑定当前插件包内 BRIDGE_CLI 与绝对 PROJECT_ROOT，执行只读 runtime 预检；再运行 `node "<BRIDGE_CLI>" route --repo "<PROJECT_ROOT>" [--change <change>] [--intent auto|explore|propose]`（方括号表示可选参数，实际运行时替换）。始终优先本次加载插件的绝对入口，目标项目旧版运行时不抢占。输出仅为只读建议，不证明阶段已执行；结合真实用户意图和语义审查选择阶段。无产物进入 EXPLORE，部分产物进入 PROPOSAL，完整产物直接 LOAD_CONTEXT；已有有效报告按建议恢复。不要为探索强制安装 hooks。
 3. 从 openspec/changes/ 的活跃目录确认变更；排除 archive。多个对象且用户未指定时才询问，不自动选择“最新目录”。
 4. 读取 tasks.md、逐任务 JSON 报告和 Git 记录；重算摘要，核对规范源内容和任务映射是否变化。旧 PASS 不等于当前工作区已经通过。
 5. 若用户授权整个流程，按顺序持续推进；若只授权单阶段，到阶段终点停止。上游产物已足够清楚时跳过重复 brainstorming；需求不明确则回到上游澄清。
-6. 进入业务实现前运行 `node bridge/checks/bridge.mjs doctor --repo .`。未安装、脚本缺失、环境不可用返回 BLOCKED；使用 README 的安装恢复步骤，不把“未启用”当作 PASS。
+6. 进入业务实现前确认已绑定 checker 的 runtime 预检及真实 Bridge 检查通过。未安装项目 Hook 不阻塞业务流程；若用户要求提交保护，则单独按授权执行 install/doctor，失败不宣称保护生效。缺少完整插件检查器按共享契约恢复，不自动复制文件或修改 Git 配置。
 
 ## IMPLEMENT_TASK 交接
 
@@ -41,7 +41,7 @@ mode: primary
 
 1. 先同步 tasks.md 的完成标记，再让最终阶段重新确认全部 Task 报告的有效性。
 2. 调用 bridge-dual-verify-skill，核对最终全量覆盖、OpenSpec verify、代码审查和全量验证证据。
-3. 执行 `node bridge/checks/bridge.mjs ready --repo . --change <change>`。任何失败都不得归档。
+3. 执行 `node "<BRIDGE_CLI>" ready --repo "<PROJECT_ROOT>" --change <change>`。任何失败都不得归档。
 4. 检查至归档之间若有代码/规范变动，重新验证。随后调用实际宿主归档入口并核对主规范更新；不硬编码归档目录。
 
 ## 提交与边界

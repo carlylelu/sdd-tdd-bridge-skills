@@ -11,7 +11,7 @@ import { fingerprint, ready } from '../checks/evidence.mjs';
 
 const cliPath = fileURLToPath(new URL('../checks/bridge.mjs', import.meta.url));
 function fixture(t, kind = 'complete') {
-  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'bridge-workflow-'));
+  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'bridge workflow '));
   t.after(() => fs.rmSync(repo, { recursive: true, force: true }));
   git(repo, 'init', '-q'); git(repo, 'config', 'core.excludesFile', path.join(repo, 'empty-ignore'));
   const base = 'openspec/changes/demo/';
@@ -213,4 +213,37 @@ test('plan artifact CLI hashes real files and rejects native source and reports'
   assert.equal(run(f.base + 'design.md').status, 1);
   f.write('bridge/reports/demo/fake.md', '# Not a plan');
   assert.equal(run('bridge/reports/demo/fake.md').status, 1);
+});
+
+
+test('runtime preflight uses the current plugin without installing project hooks', t => {
+  const f = fixture(t);
+  const gitConfigBefore = fs.readFileSync(path.join(f.repo, '.git/config'), 'utf8');
+  const run = command => spawnSync(process.execPath, [cliPath, command, '--repo', f.repo, ...(command === 'runtime' ? [] : ['--change', 'demo'])], { encoding: 'utf8', cwd: os.tmpdir() });
+  const preflight = run('runtime'); assert.equal(preflight.status, 0, preflight.stderr);
+  const info = JSON.parse(preflight.stdout); assert.equal(info.result, 'PASS');
+  assert.equal(info.checker.cli_path, fs.realpathSync(cliPath));
+  assert.equal(info.hooks.status, 'NOT_INSTALLED');
+  assert.equal(run('format').status, 0); assert.equal(run('spec-fingerprint').status, 0);
+  assert.equal(fs.existsSync(path.join(f.repo, 'bridge')), false);
+  assert.equal(fs.existsSync(path.join(f.repo, '.bridge-hooks')), false);
+  assert.equal(git(f.repo, 'status', '--porcelain').includes('bridge/'), false);
+  assert.equal(fs.readFileSync(path.join(f.repo, '.git/config'), 'utf8'), gitConfigBefore);
+});
+
+test('current plugin preflight does not execute an obsolete project runtime', t => {
+  const f = fixture(t); f.write('bridge/checks/bridge.mjs', 'throw new Error("OLD PROJECT RUNTIME EXECUTED");');
+  const result = spawnSync(process.execPath, [cliPath, 'runtime', '--repo', f.repo], { encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(JSON.parse(result.stdout).checker.cli_path, fs.realpathSync(cliPath));
+});
+
+test('runtime reports broken optional hooks separately from current checker usability', async t => {
+  const f = fixture(t); const { install } = await import('../checks/install.mjs'); install(f.repo);
+  f.write('.bridge-hooks/pre-commit', '# modified hook\n');
+  const run = command => spawnSync(process.execPath, [cliPath, command, '--repo', f.repo], { encoding: 'utf8' });
+  const result = run('runtime'); assert.equal(result.status, 0, result.stderr);
+  const info = JSON.parse(result.stdout);
+  assert.equal(info.scope, 'checker-runtime'); assert.equal(info.hooks.status, 'FAILED');
+  assert.ok(info.hooks.diagnostics.length); assert.equal(run('doctor').status, 1);
 });

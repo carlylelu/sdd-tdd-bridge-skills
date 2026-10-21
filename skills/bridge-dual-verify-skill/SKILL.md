@@ -7,6 +7,8 @@ description: 在全部 OpenSpec Task 完成、准备最终验收和归档时使�
 
 先读取同包 `../bridge-load-context-skill/references/workflow.md`。本阶段只验证和写报告，不修改业务代码、不归档。
 
+先按共享契约“检查器路径绑定与只读预检”从当前加载的完整插件包解析 BRIDGE_CLI，确认绝对 PROJECT_ROOT，并执行 runtime；不要假定项目内已有 bridge/checks，也不要求先安装 Hook。所有命令替换为已绑定的真实路径，缺失或失败不得用 OpenSpec validate 替代。
+
 ## 前置与输入
 
 全部任务已完成、完成标记已同步 tasks.md；提供所有逐任务报告、有效规范、task_mapping、实际宿主验证入口和项目完整验证命令。未完成返回 BLOCKED，不能把最后一个任务 PASS 视为全部任务通过。
@@ -20,7 +22,7 @@ description: 在全部 OpenSpec Task 完成、准备最终验收和归档时使�
 5. 必须实际调用 Superpowers verification-before-completion，由该 Skill 按项目验证流程执行全部规定命令；项目命令是输入，不能用“运行了项目测试”省略该 Skill。命令取自项目配置/护栏，不把 npm test 视为所有 Node 项目的充分验证。记录每条命令、退出码、日志位置和实际覆盖范围；未能获取数量时记录 unknown，不能编造。
 6. 规范检查失败仍可收集独立且安全的命令验证证据，便于一次性诊断；任一必需项失败都不能 PASS。零测试或跳过范围需要说明适用的验收依据，不能只凭退出码 0。
 7. 保存 `bridge/reports/<change>/verify-report.json`。包含公共字段、完整 tasks ID 列表、checks（full_scenario_coverage、effective_spec_compliance、code_review）、openspec_verify（entry/result/evidence）、verification（command/exit_code/evidence 数组）。包含 invocations.verification（verification-before-completion）和 invocations.code_review（requesting-code-review）的实际执行凭据。引用全部逐任务 JSON；可附 Markdown 汇总。
-8. 执行 `node bridge/checks/bridge.mjs ready --repo . --change <change>`，记录实际结果。任何失败、过期报告、遗漏任务或命令失败都不得通知归档。
+8. 执行 `node "<BRIDGE_CLI>" ready --repo "<PROJECT_ROOT>" --change <change>`，记录实际结果。任何失败、过期报告、遗漏任务或命令失败都不得通知归档。
 
 ## 完成与路由
 

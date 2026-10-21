@@ -1,7 +1,7 @@
 {
   "name": "sdd-tdd-bridge",
   "description": "OpenSpec-Superpowers 衔接插件，提供统一主 Agent、6 阶段 Skill、OpenSpec 产物格式确定性检查、Git Hook 强制 commit message 规范、双重验证（OpenSpec verify + Superpowers verification）。连接 OpenSpec（管做什么）和 Superpowers（管怎么做），带强校验。",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "author": {
     "name": "carlylelu"
   },
@@ -40,5 +40,5 @@
   "checks": "./checks/",
   "displayName": "sdd-tdd-bridge",
   "isOfficial": false,
-  "changelog": "v2.2.0: 修复 Superpowers 原生规划/执行/验证委托，绑定真实计划与调用凭据，强化流程门禁和忽略报告的新鲜度校验；升级说明见 CHANGELOG.md。"
+  "changelog": "v2.2.1: 修复插件检查器路径解析，新增只读 runtime 预检，LOAD_CONTEXT 无需项目安装；Git Hook 作为可选独立功能。"
 }

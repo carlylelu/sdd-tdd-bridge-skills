@@ -29,3 +29,8 @@ Separate source and workspace freshness: code edits should not force requirement
 Do not optimize away a native skill's actual output by calling Bridge JSON an equivalent plan. Native writing-plans authors a real implementation plan, while Bridge verifies coverage and tracks its path/hash. Invocation receipts are audit records, not authenticity proofs. Require explicit native executor/TDD/review/verification roles, spec-before-quality sequencing and final routing even when an executor offers branch finishing. Project verification commands are inputs to native verification, not a replacement for it.
 
 Gate inputs cannot depend on incidental Git visibility. Context/planning reports that determine plan semantics must be fingerprinted even when reports are ignored. Read the plan directly and compare its SHA-256; if it is updated and reapproved, the changed planning receipt must still invalidate old task/final evidence. Use explicit non-behavior exemptions rather than silently dropping TDD requirements. Full audit evidence: ../../audit/2026-10-21-flow-control.md.
+
+
+## Checker location versus target repository
+
+Never infer checker location from the working directory or the output report directory. Resolve the loaded package entry and pass the target repository separately; loading a Skill does not copy runtime files. Read-only runtime preflight and optional Hook installation have different scopes: checker PASS does not mean hooks PASS, and no hooks does not block standard checks. Preserve real exit codes and fail closed on missing package files; upstream validate cannot replace Bridge fingerprints.

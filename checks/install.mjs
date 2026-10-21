@@ -155,3 +155,23 @@ export function uninstall(repo) {
   if (fs.existsSync(dir) && fs.readdirSync(dir).length === 0) fs.rmdirSync(dir);
   return { result: 'PASS', message: 'Previous hooksPath restored; checkers and reports retained' };
 }
+
+
+// Read-only checker preflight. Hook installation is a separate, optional concern.
+export function runtime(repo) {
+  if (Number(process.versions.node.split('.')[0]) < 20) throw new Error('Bridge checker requires Node.js >=20');
+  for (const name of runtimeFiles) if (!fs.statSync(path.join(source, name)).isFile()) throw new Error(`Incomplete Bridge checker package: ${name}`);
+  const cli = fs.realpathSync(path.join(source, 'bridge.mjs'));
+  const packageFile = path.resolve(source, '../package.json');
+  let version = null;
+  if (fs.existsSync(packageFile)) {
+    const pkg = readJSON(packageFile);
+    if (pkg.name === 'sdd-tdd-bridge') version = pkg.version;
+  }
+  let hooks = { status: 'NOT_INSTALLED', required_for_checks: false };
+  if (fs.existsSync(path.join(repo, 'bridge/install-state.json')) || fs.existsSync(path.join(repo, '.bridge-hooks'))) {
+    try { doctor(repo); hooks = { status: 'PASS', required_for_checks: false }; }
+    catch (error) { hooks = { status: 'FAILED', required_for_checks: false, diagnostics: [error.message] }; }
+  }
+  return { result: 'PASS', scope: 'checker-runtime', checker: { cli_path: cli, version, node_version: process.versions.node }, repo, hooks };
+}

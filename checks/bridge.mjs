@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { repository, formatCheck, commitCheck } from './lib.mjs';
 import { fingerprint, ready } from './evidence.mjs';
-import { install, doctor, uninstall } from './install.mjs';
+import { install, doctor, uninstall, runtime } from './install.mjs';
 import { specFingerprint, planFingerprint } from './context.mjs';
 import { route } from './workflow.mjs';
 
@@ -37,10 +37,11 @@ try {
       if (!options['--change']) throw new Error('Required: --change');
       formatCheck(repo, { change: options['--change'] });
       result = ready(repo, options['--change']); break;
+    case 'runtime': result = runtime(repo); break;
     case 'install': result = install(repo); break;
     case 'doctor': result = doctor(repo); break;
     case 'uninstall': result = uninstall(repo); break;
-    default: throw new Error('Usage: bridge.mjs <route|spec-fingerprint|plan-fingerprint|format|commit|fingerprint|ready|install|doctor|uninstall> --repo <root>');
+    default: throw new Error('Usage: bridge.mjs <runtime|route|spec-fingerprint|plan-fingerprint|format|commit|fingerprint|ready|install|doctor|uninstall> --repo <root>');
   }
   console.log(JSON.stringify(result, null, 2));
 } catch (error) {

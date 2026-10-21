@@ -2,6 +2,26 @@
 
 六个阶段和主 Agent 共用此契约。宿主的系统指令、项目护栏和用户授权优先。此文件不授予提交、推送或发布权限。
 
+## 检查器路径绑定与只读预检（所有阶段必读）
+
+先区分当前加载的插件包根目录和目标项目根目录，绑定 **BRIDGE_CLI** 与 **PROJECT_ROOT**；下面命令中的 `<BRIDGE_CLI>`、`<PROJECT_ROOT>` 必须替换为已确认的绝对路径并保留参数引号，不是字面参数，不依赖当前工作目录。
+
+1. **优先当前加载插件包的检查器**，不先尝试目标项目的 `bridge/checks/bridge.mjs`。宿主注入真实路径时使用注入值；否则从实际加载的 Skill 文件位置解析：`<插件根>/skills/<skill>/SKILL.md` 对应同包 `<插件根>/checks/bridge.mjs`（从 Skill 所在目录向上两级）。从 agents/bridge_agent.md 则向上一级到包根；若仅知道本共享契约的真实路径，从 references/ 向上三级到包根。使用路径工具解析，不猜用户名、缓存版本或“最新目录”。有多个插件版本时沿用本次加载包，不混用模块。
+2. 确认完整 checks/ 和 Node.js >=20 可用，PROJECT_ROOT 是用户指定业务仓库的绝对根路径。预检：`node "<BRIDGE_CLI>" runtime --repo "<PROJECT_ROOT>"`。读取真实退出码和 JSON；checker.cli_path 是实际运行入口，version 在完整插件包中返回包版本，在没有 package.json 的显式项目运行时中可为 null，不猜版本。
+3. `runtime` 是只读检查，不生成 bridge/checks、不安装 Hook、不改 Git 配置。顶层 PASS 仅说明当前 checker 可用；hooks 独立返回 NOT_INSTALLED/PASS/FAILED，不能把 NOT_INSTALLED 当业务流程失败，也不能把 checker PASS 说成 Hook 已正常安装。没有 Hook 仍可正常执行格式、摘要、规划、实现审查和 ready。已存在的 Hook 报错必须单独展示，提交保护修复前不宣称其正常；只读分析可继续。
+4. 所有阶段后续统一使用已绑定的入口，例如 `node "<BRIDGE_CLI>" format --repo "<PROJECT_ROOT>" --change <change>` 和 spec-fingerprint/plan-fingerprint/fingerprint/route/ready；报告始终写入 PROJECT_ROOT 下，不能写到插件缓存。LOAD_CONTEXT 在预检成功后才执行 spec-fingerprint 和 format，仍需各命令实际成功才签发 PASS。项目有旧版运行时也不抢占当前插件检查器。
+5. 项目级 install/doctor 是**可选 Git Hook 功能**。仅在用户授权启用/维护提交保护时，从同一已绑定检查器执行 `install --repo "<PROJECT_ROOT>"`，然后 doctor；会复制完整运行时并修改目标 Git 配置，不能为 LOAD_CONTEXT 自动执行。用户要求 Hook 必须启用时将其作为额外明确前置，而非默认前置。若仅有用户明确指定的项目运行时可用，可显式绑定该完整入口并预检，记录版本未知或路径；不得静默降级到旧副本。
+6. **缺包或失败时闭合流程**：只复制 skills/ 而没有同包 checks/ 时，返回当前阶段 BLOCKED，列出实际加载路径、缺失路径、原错误及恢复操作：重新安装/更新完整 sdd-tdd-bridge 插件（保留 checks、skills、agents 等目录结构），或让用户提供同版本完整包位置后重新绑定；无需复制 mjs 到业务项目，更不需要安装 OpenSpec 来补 Bridge 文件。命令已启动但检查失败时按真实结论 FAILED/BLOCKED 处理。不得使用 `|| echo`、`|| true`、忽略退出码、自制摘要/PASS JSON或删除检查继续；OpenSpec validate 可作为补充，但不能替代 Bridge format、spec-fingerprint、plan-fingerprint、runtime 或 ready。未拿到真实摘要不得推进 PLANNING。
+
+路径含空格的 PowerShell 示例（实际使用时必须改成真实绝对路径）：
+
+```powershell
+node "C:\完整插件目录\checks\bridge.mjs" runtime --repo "D:\业务项目目录"
+node "C:\完整插件目录\checks\bridge.mjs" spec-fingerprint --repo "D:\业务项目目录" --change example-change
+```
+
+本协议只改变检查器定位和安装前置，不减弱有效规范、原生能力委托、任务覆盖、计划新鲜度或归档授权门禁。缺少原生 OpenSpec/Superpowers 能力时仍按各自恢复指引阻塞，不能因 checker 可用而绕过。
+
 ## 有效规范
 
 有效规范 = 主规范应用本次 delta 后的结果。LOAD_CONTEXT 必须列出 requirement 的基线位置、delta 位置、操作及最终要求。
@@ -75,7 +95,7 @@ requirement/scenario 的 ID 优先使用上游显式 ID，否则使用 capabilit
 
 报告公共字段：schema_version=1、stage、change_id、result、checked_at（实际 UTC ISO 时间，采用 JavaScript toISOString 的 YYYY-MM-DDTHH:mm:ss.sssZ 格式，不得超过当前时间五分钟）、fingerprint、evidence（非空字符串数组）、issues（数组）、outputs（非空字符串数组）、next_action（非空字符串）。PASS 的 issues 必须为空；已解决问题可记录到独立历史字段。Task 还必须包含 scenario_ids、implementation_refs、test_refs 字符串数组，文档或配置等不适用场景的数组可以为空，但须在证据中说明验证方式。模板位于插件 templates/；模板默认 BLOCKED，必须用实际检查结果替换，不能把模板当证据。
 
-运行 `node bridge/checks/bridge.mjs fingerprint --repo .` 获取工作区摘要：覆盖 Git 跟踪文件及未忽略的新文件、删除和执行权限；排除 bridge/reports/ 中的其他报告、.bridge-hooks/、bridge/install-state.json，避免报告写入使自身失效。忽略文件（如构建产物）和外部服务不在摘要中，需另列环境/命令证据；子模块须单独验证。
+运行 `node "<BRIDGE_CLI>" fingerprint --repo "<PROJECT_ROOT>"` 获取工作区摘要：覆盖 Git 跟踪文件及未忽略的新文件、删除和执行权限；排除 bridge/reports/ 中的其他报告、.bridge-hooks/、bridge/install-state.json，避免报告写入使自身失效。忽略文件（如构建产物）和外部服务不在摘要中，需另列环境/命令证据；子模块须单独验证。
 
 Task 报告绑定审查时的摘要。最终阶段采用保守策略：全部 task 报告必须在最终工作区重新确认；先更新任务完成标记，再生成摘要，实际复查关联行为、回归和代码审查，不能只替换摘要或时间。任何代码/规范/任务清单变化使旧 PASS 失效。恢复时重算摘要、查看任务清单和证据，不凭聊天记录认定完成。
 
@@ -85,7 +105,7 @@ LOAD_CONTEXT / PLANNING 的输入依赖是规范、护栏和映射；实现期�
 
 完成全部任务后：执行最终规范审查、宿主 OpenSpec verify、代码质量审查及项目声明的全量验证命令。规范审查与命令验证各自收集证据；一项失败不妨碍运行另一项安全的只读验证，但任何一项失败都不能归档。命令不存在、零测试、跳过用例或覆盖范围不足不能仅凭退出码 0 判 PASS；记录适用的验收理由。
 
-归档前必须执行 `node bridge/checks/bridge.mjs ready --repo . --change <change>`。该命令检查格式、任务完成、逐任务报告、最终覆盖、OpenSpec 结果、命令退出码和摘要新鲜度；它不执行测试、不证明证据真实性、不解释需求语义，也不能拦截从其他入口直接运行的 OpenSpec archive。主 Agent 只能在该命令 PASS 且宿主验证真实完成后调用宿主归档入口。
+归档前必须执行 `node "<BRIDGE_CLI>" ready --repo "<PROJECT_ROOT>" --change <change>`。该命令检查格式、任务完成、逐任务报告、最终覆盖、OpenSpec 结果、命令退出码和摘要新鲜度；它不执行测试、不证明证据真实性、不解释需求语义，也不能拦截从其他入口直接运行的 OpenSpec archive。主 Agent 只能在该命令 PASS 且宿主验证真实完成后调用宿主归档入口。
 
 OpenSpec/Superpowers 的名称空间和命令形式因宿主而异。先确认实际可用的 Skill/命令，禁止把 `/opsx:verify` 当成所有宿主都支持的 shell 命令。缺失则 BLOCKED。归档目录由宿主确定；本地检查支持 openspec/changes/archive/ 和 openspec/archive/，并从活跃变更发现中排除 archive。格式检查不阻止整项移除/归档，但归档前 ready 仍须执行。
 
@@ -93,7 +113,7 @@ OpenSpec/Superpowers 的名称空间和命令形式因宿主而异。先确认�
 
 主 Agent 首先使用只读 route 判断入口，结合用户明确的 explore/propose 意图与语义判断。EXPLORE 和 PROPOSAL 委托宿主原生 OpenSpec 能力，禁止模拟原生命令或执行聊天 slash shell 命令。探索默认只读；捕获文件需要用户授权。仅探索或仅方案请求在相应阶段停止。完整已有产物可以直接进入 LOAD_CONTEXT，不要求补做 explore/proposal 报告；格式通过不代表需求完整。
 
-运行 `node bridge/checks/bridge.mjs spec-fingerprint --repo . --change <change>` 获取独立规范摘要。它覆盖选定变更全部文件、主规范、OpenSpec config.yaml/yml/json 及 AGENTS.md/CLAUDE.md，规范化文本换行和 tasks.md checkbox 完成状态。任务 ID、描述、需求、设计和护栏变化会使旧 context/planning 失效；业务代码变化不触发重新规划。勾选完成状态仍会使最终工作区摘要失效。
+运行 `node "<BRIDGE_CLI>" spec-fingerprint --repo "<PROJECT_ROOT>" --change <change>` 获取独立规范摘要。它覆盖选定变更全部文件、主规范、OpenSpec config.yaml/yml/json 及 AGENTS.md/CLAUDE.md，规范化文本换行和 tasks.md checkbox 完成状态。任务 ID、描述、需求、设计和护栏变化会使旧 context/planning 失效；业务代码变化不触发重新规划。勾选完成状态仍会使最终工作区摘要失效。
 
 context-report.json 和 planning-report.json 必须含当前 `spec_fingerprint`，公共 fingerprint 仍记录当时工作区。阶段开始和结束都计算规范摘要，若期间变化则重新处理输入，不能签发 PASS。planning 的 task_mapping 必须恰好覆盖当前全部 task ID。旧报告缺少 spec_fingerprint 视为失效，按 LOAD_CONTEXT → PLANNING 重建；保留历史记录，不只修改摘要。ready 同时检查两份上游报告、映射及最终证据，旧规范报告即使配上新最终报告也不能归档。
 
@@ -140,7 +160,7 @@ Codex 已有 CLI、未初始化时，面向用户的提示示例：
 
 公共调用凭据结构为 `invocations.<role> = {"skill":"superpowers:writing-plans","status":"PASS","evidence":["实际会话执行记录和产物引用"]}`。真实名称可含宿主命名空间，不能填 Bridge Skill 替代。PLANNING 要求 planning；Task 要求 implementation、code_review，behavior 还要求 tdd；最终报告要求 verification、code_review。记录工具/加载入口、执行结果和证据位置；CLI 只核对结构，不能证明宿主执行真实性，不得伪造调用。用户明确要求替代专业流程时应先声明偏离 Bridge 标准流程，不能给该标准流程签发 PASS。
 
-planning-report 额外要求 `plan = {"path":"docs/superpowers/plans/实际计划.md","sha256":"真实文件字节摘要"}`。用 `node bridge/checks/bridge.mjs plan-fingerprint --repo . --plan <仓库内相对路径>` 获取。遵循真实 writing-plans 路径偏好；不能拿 OpenSpec 源或 bridge/reports 下的报告冒充实现计划。仓库外计划需要用户允许的仓库内校验副本，不能静默覆盖偏好。直接检查文件（包括 Git 忽略的计划）；修改、删除或摘要不符回到 PLANNING，保留历史报告，不只刷新摘要。
+planning-report 额外要求 `plan = {"path":"docs/superpowers/plans/实际计划.md","sha256":"真实文件字节摘要"}`。用 `node "<BRIDGE_CLI>" plan-fingerprint --repo "<PROJECT_ROOT>" --plan <仓库内相对路径>` 获取。遵循真实 writing-plans 路径偏好；不能拿 OpenSpec 源或 bridge/reports 下的报告冒充实现计划。仓库外计划需要用户允许的仓库内校验副本，不能静默覆盖偏好。直接检查文件（包括 Git 忽略的计划）；修改、删除或摘要不符回到 PLANNING，保留历史报告，不只刷新摘要。
 
 每项 task_mapping 必须含 kind、plan_anchor、非空 requirement_ids/task_assertions/implementation_files/verification，verification 每项含 command/test_ref。kind=behavior 需非空 scenario_ids；kind=non_behavior 可以没有场景但必须给 tdd_exemption。deferred_integration 的 owner_tasks 必须存在且含当前任务。语义完整性仍由实际审查负责。旧版只有任务 ID 或无原生计划/调用凭据的报告必须重新规划，最终 Task/verify 缺新凭据则真实重审。
 

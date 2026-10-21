@@ -1,6 +1,6 @@
 # sdd-tdd-bridge
 
-当前版本：**2.2.0**。版本变更及升级步骤见 [CHANGELOG.md](CHANGELOG.md)。
+当前版本：**2.2.1**。版本变更及升级步骤见 [CHANGELOG.md](CHANGELOG.md)。
 
 OpenSpec 与 Superpowers 的衔接插件：六阶段 Skill、主 Agent、本地 Git 检查和最终证据校验。保留规范驱动开发与 TDD 的分工，使用可追踪的 Task—场景—验证映射衔接二者。
 
@@ -61,7 +61,7 @@ openspec init --tools codex --profile core
 /plugin install sdd-tdd-bridge@sdd-tdd-bridge
 ```
 
-该入口注册随包的 Skill 和 Agent；安装后仍须执行下方仓库检查安装。具体 Skill 名称可能带插件命名空间，主 Agent 应先发现实际入口。
+该入口注册随包的 Skill 和 Agent；只读检查直接使用包内检查器，启用 Git Hook 时才执行下方可选仓库安装。具体 Skill 名称可能带插件命名空间，主 Agent 应先发现实际入口。
 
 ### OpenCode
 
@@ -73,9 +73,23 @@ openspec init --tools codex --profile core
 
 ### 其他支持 Skill 的宿主（包括 Codex）
 
-将 `skills/` 下的六个 Skill 目录完整复制到该宿主配置的技能目录；必须保留 `bridge-load-context-skill/references/workflow.md`。`agents/bridge_agent.md` 是编排说明，是否可自动注册由宿主决定；不能仅复制文件就宣称原生 Agent 已启用。可由当前会话按该编排说明调用六个 Skill。
+优先安装完整插件。若手动注册六个 Skill，保留整个包的 skills/checks/agents 目录结构，并将包内各 Skill 目录注册给宿主；仅孤立复制 skills/ 会丢失检查器。必须保留 `bridge-load-context-skill/references/workflow.md`。`agents/bridge_agent.md` 是编排说明，是否可自动注册由宿主决定；不能仅复制文件就宣称原生 Agent 已启用。可由当前会话按该编排说明调用六个 Skill。
 
-### 为目标仓库启用检查
+### Skill 检查默认使用插件包，不需要项目安装
+
+安装/启用插件后，Agent 从实际加载的包位置解析完整 `checks/bridge.mjs`，将业务项目根目录作为绝对 `--repo` 参数。OpenCode 会注入当前包的真实入口；其他宿主从实际加载的 Skill 或 Agent 文件位置解析，不猜缓存版本。
+
+```powershell
+node "C:\完整插件目录\checks\bridge.mjs" runtime --repo "D:\业务项目目录"
+node "C:\完整插件目录\checks\bridge.mjs" format --repo "D:\业务项目目录" --change add-login
+node "C:\完整插件目录\checks\bridge.mjs" spec-fingerprint --repo "D:\业务项目目录" --change add-login
+```
+
+将示例路径替换为真实路径。runtime 是只读预检，返回 checker.cli_path、版本与独立的 hooks 状态。hooks=NOT_INSTALLED 不阻止 LOAD_CONTEXT、规划、实现审查或 ready，也不会自动生成项目级源码/Hook。已有项目旧版检查器不优先于当前插件。预检 PASS 只代表 checker 可用，不能把 hooks=FAILED 说成提交保护正常。
+
+只有 skills/ 而没有同包 checks/ 的手动安装不完整：重新安装完整插件或提供同版本完整包位置。检查失败保持原始非零退出码，不能用 `|| echo` 吞掉错误，不能用 OpenSpec validate 替代 Bridge 摘要或门禁。报告保存在业务项目，不写入插件缓存。
+
+### 可选：为目标仓库启用 Git Hook 提交保护
 
 在插件源码目录运行，`/path/to/project` 替换为目标仓库根目录（支持带空格路径和 Git worktree）：
 
@@ -121,14 +135,14 @@ node checks/bridge.mjs uninstall --repo "/path/to/project"
 
 ## CLI 与格式约定
 
-目标项目中：
+以下示例使用当前插件包的检查器，替换插件和目标项目的绝对路径；无需先向项目复制运行时：
 
 ```sh
-node bridge/checks/bridge.mjs format --repo . --change add-login
-node bridge/checks/bridge.mjs format --repo . --staged
-node bridge/checks/bridge.mjs commit --repo . --message-file .git/COMMIT_EDITMSG
-node bridge/checks/bridge.mjs fingerprint --repo .
-node bridge/checks/bridge.mjs ready --repo . --change add-login
+node "<插件根目录>/checks/bridge.mjs" format --repo "<目标项目绝对根目录>" --change add-login
+node "<插件根目录>/checks/bridge.mjs" format --repo "<目标项目绝对根目录>" --staged
+node "<插件根目录>/checks/bridge.mjs" commit --repo "<目标项目绝对根目录>" --message-file "<目标项目绝对根目录>/.git/COMMIT_EDITMSG"
+node "<插件根目录>/checks/bridge.mjs" fingerprint --repo "<目标项目绝对根目录>"
+node "<插件根目录>/checks/bridge.mjs" ready --repo "<目标项目绝对根目录>" --change add-login
 ```
 
 兼容旧 `checks/openspec-format-check` 和 `checks/commit-msg-check` Bash 入口，它们转发同一 Node 实现；复制检查器时必须复制整个 checks/，不能只复制两个 wrapper。
@@ -190,15 +204,15 @@ npm pack --dry-run
 主 Agent 现在覆盖 EXPLORE → PROPOSAL → LOAD_CONTEXT → PLANNING → IMPLEMENT_TASK → DUAL_VERIFY → ARCHIVE。前两阶段通过宿主实际提供的 OpenSpec 原生能力执行，单阶段请求在该阶段结束；完整已有产物直接进入下游。探索默认只读，原生能力缺失会 BLOCKED。
 
 ```sh
-node bridge/checks/bridge.mjs route --repo .
-node bridge/checks/bridge.mjs route --repo . --change my-change --intent explore
-node bridge/checks/bridge.mjs route --repo . --change my-change --intent propose
-node bridge/checks/bridge.mjs spec-fingerprint --repo . --change my-change
+node "<插件根目录>/checks/bridge.mjs" route --repo "<目标项目绝对根目录>"
+node "<插件根目录>/checks/bridge.mjs" route --repo "<目标项目绝对根目录>" --change my-change --intent explore
+node "<插件根目录>/checks/bridge.mjs" route --repo "<目标项目绝对根目录>" --change my-change --intent propose
+node "<插件根目录>/checks/bridge.mjs" spec-fingerprint --repo "<目标项目绝对根目录>" --change my-change
 ```
 
 安装前可使用本插件 checks/bridge.mjs 的绝对路径运行只读命令。route 输出仅为建议，需结合语义审查；多变更需选择，缺失或格式错误的产物回到方案阶段。宿主原生命令不能作为 shell 命令执行。
 
-升级后重新运行安装流程以刷新 runtime（新增 context、workflow、reports 模块），再运行 doctor。旧 context/planning 报告缺少 spec_fingerprint 时重新生成；不必补做探索和方案报告。规范摘要覆盖变更、主规范、配置与护栏，忽略任务勾选进度和换行差异；最终工作区摘要仍检查代码与任务进度。上游变更保留历史报告，但 ready 拒绝过期报告。
+升级后默认使用新插件包的检查器；已启用 Git Hook 的仓库还需按安装恢复步骤刷新其独立 runtime，再运行 doctor。旧 context/planning 报告缺少 spec_fingerprint 时重新生成；不必补做探索和方案报告。规范摘要覆盖变更、主规范、配置与护栏，忽略任务勾选进度和换行差异；最终工作区摘要仍检查代码与任务进度。上游变更保留历史报告，但 ready 拒绝过期报告。
 
 代理语义依据 [OpenSpec explore](https://github.com/Fission-AI/OpenSpec/blob/main/docs/explore.md) 和 [原生 Skills](https://github.com/Fission-AI/OpenSpec/blob/main/docs-lab/reference/skills.md)，具体可用入口以宿主发现结果为准。
 
@@ -212,7 +226,7 @@ Bridge 负责交接与核验，原生能力负责专业工作。PROPOSAL 后先 
 执行阶段实际调用 subagent-driven-development 或 executing-plans；行为实现使用 test-driven-development。每个 Task 先由 Bridge 做规范检查，再由 requesting-code-review 执行独立质量审查。最终再次进行独立全差异代码审查，调用 verification-before-completion 和原生 OpenSpec verify，ready 通过后才在用户授权内归档。原生 finishing 分支不能提前结束 Bridge 或自动获得提交/推送权限。
 
 ```sh
-node bridge/checks/bridge.mjs plan-fingerprint --repo . --plan docs/superpowers/plans/my-change.md
+node "<插件根目录>/checks/bridge.mjs" plan-fingerprint --repo "<目标项目绝对根目录>" --plan docs/superpowers/plans/my-change.md
 ```
 
 将该命令输出保存为 planning 报告的 `plan`（path/sha256），同时记录 `invocations.planning` 的实际 Skill、PASS 和非空执行证据。任务报告记录 implementation、code_review；行为任务还记录 tdd；最终报告记录 verification 和 code_review，openspec_verify 还需 entry。模板仍默认 BLOCKED，不能将示例凭据复制为真实结果。

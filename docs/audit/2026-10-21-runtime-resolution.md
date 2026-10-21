@@ -1,0 +1,14 @@
+# Plugin checker resolution
+
+Problem: skills assume project-local bridge/checks despite plugin installation not copying runtime; doctor also makes optional hooks a mandatory implementation dependency. Scope is all checker invocations, not external OpenSpec/Superpowers behavior.
+
+Design: bind BRIDGE_CLI to the currently loaded complete plugin package and PROJECT_ROOT to the target absolute repository root. Runtime preflight is read-only, returns actual checker path/version plus separate hook status. No install, copying, Git configuration edits or validate fallback. OpenCode injects the actual plugin checker path; other hosts resolve it relative to the current Skill/Agent file, never by scanning guessed cache versions. Skill-only copies without sibling checks remain blocked with complete-package recovery guidance. Explicit project installation remains for Git Hooks and doctor diagnostics.
+
+Acceptance: a separate fresh target repo can run format/spec-fingerprint from an absolute packaged checker with no bridge/checks or hooks written; paths with spaces and arbitrary cwd work; obsolete target runtime is not executed; nonzero errors cannot be swallowed or replaced by OpenSpec validate; all stages use the same binding. Packed extraction and full regression must pass; prompt pressure tests cover failure/recovery and optional hooks. No release, commit/push, global installation or changes to user's business project requested.
+
+Baseline: two new CLI tests failed on unknown runtime command; prompt pressure test failed five of six cases (all except existing generic fail-closed requirement). Fix checker preflight, injected host path and shared protocol; retain genuine format/spec/final-gate failures.
+
+
+Results: all six prompt pressure scenarios now PASS; parent-directory resolution was independently checked for Skill, Agent and shared contract locations. Independent runtime review found no new confirmed P1/P2. OpenCode injects its actual complete-package checker path while preserving explicit user overrides. LOAD_CONTEXT records actual checker metadata and target root.
+
+Final full regression with an actual tarball: 77 tests, 76 PASS, 0 FAIL, 1 POSIX-only skip on Windows. Packaged checker runtime/format/spec-fingerprint runs before any install and leaves no bridge directory; version and injected path assertions pass. All workflow target fixtures and extracted package directory include spaces, and explicit-checker runs also exercise unrelated cwd. Broken optional hooks produce separate FAILED diagnostics without pretending checker failure. JS/JSON parsing and diff whitespace checks pass. No real business project, plugin cache, Git hooks/config, version or Git history was changed by this task. Live host LOAD_CONTEXT execution remains untested; pressure tests and executable package fixtures are the validated scope.

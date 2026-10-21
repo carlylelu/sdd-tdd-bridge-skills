@@ -35,3 +35,11 @@ Recovery prompt pressure re-test: all five scenarios passed (CLI installed/unini
 2.2.0 release preparation 2026-10-21: version synchronized across package and plugin manifests; changelog finalized with 2.1.x migration requirements. User authorized commit and GitHub push. Release verification uses a fresh 2.2.0 tarball and complete regression; prior audit records retain their historical uncommitted status.
 
 2.2.0 final release verification: fresh source/package manifest versions all 2.2.0; actual packed-artifact full suite 74 tests, 73 pass, 0 fail, 1 POSIX-only skip. Installed runtime including plan-fingerprint and plugin registration passed. JS/JSON/whitespace checks passed; four shell entry points passed syntax checks outside the sandbox after Git Bash DLL initialization was blocked inside it.
+
+
+2026-10-21 checker-path repair complete in working tree: current full plugin checker is bound separately from target repo; runtime preflight is read-only, optional Hook state is independent, and all six Skills plus agent use absolute entry/target binding with fail-closed errors. OpenCode injects package path. Regression: fresh packaged full suite 77 tests, 76 pass, 0 fail, 1 POSIX-only skip; six pressure scenarios PASS, independent review no new P1/P2. See ../audit/2026-10-21-runtime-resolution.md. No release/commit/push/global install or business-project configuration change.
+
+
+2.2.1 release preparation 2026-10-21: user authorized version update, commit and GitHub push. Package/plugin manifests and README synchronized; changelog finalized. Prior no-release statements describe historical task boundaries. Fresh 2.2.1 tarball is used for release regression.
+
+2.2.1 final release verification: source/tarball manifest versions consistent; fresh full regression with actual 2.2.1 package completed with 77 tests, 76 pass, 0 fail, 1 POSIX-only skip. Packed pre-install checks, runtime metadata, optional hook diagnostics and OpenCode path injection passed. JavaScript syntax and staged whitespace checks are part of release validation.

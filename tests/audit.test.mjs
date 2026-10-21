@@ -98,7 +98,7 @@ test('audit R1: Claude manifest repository uses the host string schema', () => {
 });
 
 test('audit R2: packaged artifact installs, validates and registers its agent', { skip: !process.env.BRIDGE_PACKAGE_TGZ }, async t => {
-  const f = fixture(t); const extracted = fs.mkdtempSync(path.join(os.tmpdir(), 'bridge-packed-'));
+  const f = fixture(t); const extracted = fs.mkdtempSync(path.join(os.tmpdir(), 'bridge packed '));
   t.after(() => fs.rmSync(extracted, { recursive: true, force: true }));
   const unpack = spawnSync('tar', ['-xzf', process.env.BRIDGE_PACKAGE_TGZ, '-C', extracted], { encoding: 'utf8' });
   assert.equal(unpack.status, 0, unpack.stderr);
@@ -108,7 +108,13 @@ test('audit R2: packaged artifact installs, validates and registers its agent', 
     assert.equal(result.status, 0, result.stdout + result.stderr); return result;
   };
   const cli = path.join(root, 'checks/bridge.mjs');
-  run(cli, 'format', '--change', 'demo'); run(cli, 'install');
+  const runtime = JSON.parse(run(cli, 'runtime').stdout);
+  assert.equal(runtime.checker.cli_path, fs.realpathSync(cli));
+  assert.equal(runtime.hooks.status, 'NOT_INSTALLED');
+  assert.equal(runtime.checker.version, JSON.parse(fs.readFileSync(path.join(root, 'package.json'))).version);
+  run(cli, 'format', '--change', 'demo'); run(cli, 'spec-fingerprint', '--change', 'demo');
+  assert.equal(fs.existsSync(path.join(f.repo, 'bridge')), false);
+  run(cli, 'install');
   run(path.join(f.repo, 'bridge/checks/bridge.mjs'), 'doctor');
   run(path.join(f.repo, 'bridge/checks/bridge.mjs'), 'route', '--change', 'demo');
   run(path.join(f.repo, 'bridge/checks/bridge.mjs'), 'spec-fingerprint', '--change', 'demo');
@@ -119,6 +125,7 @@ test('audit R2: packaged artifact installs, validates and registers its agent', 
   const config = {}; await (await SddTddBridgePlugin({})).config(config);
   assert.ok(fs.existsSync(path.join(config.skills.paths[0], 'bridge-load-context-skill/references/workflow.md')));
   assert.match(config.agent.bridge_agent.prompt, /有效规范/);
+  assert.ok(config.agent.bridge_agent.prompt.includes(JSON.stringify(path.join(root, 'checks/bridge.mjs'))));
   assert.equal(JSON.parse(fs.readFileSync(path.join(root, 'templates/task-report.json'))).result, 'BLOCKED');
 });
 test('audit R2: WHEN cannot consume a THEN line as its value', t => {
