@@ -36,12 +36,16 @@ export const SddTddBridgePlugin = async () => {
         config.skills.paths.push(skillsDir);
       }
       config.agent = config.agent || {};
-      config.agent.bridge_agent = {
+      const legacy = config.agent.bridge_agent;
+      const current = config.agent["SDD-TDD 工作流"];
+      config.agent["SDD-TDD 工作流"] = {
         description: 'OpenSpec-Superpowers bridge orchestrator',
         mode: 'primary',
         prompt,
-        ...config.agent.bridge_agent
+        ...legacy,
+        ...current
       };
+      delete config.agent.bridge_agent;
     }
   };
 };

@@ -1,5 +1,9 @@
 # 版本日志
 
+## [2.2.2] - 2026-11-27
+
+- CodeFree-O/OpenCode 的 Tab 模式名称改为“SDD-TDD 工作流”，迁移原 bridge_agent 配置并保留用户覆盖。
+
 ## [2.2.1] - 2026-10-21
 
 - 六个 Skill 和主 Agent 统一优先解析当前插件包内检查器，始终显式传入业务项目绝对路径；修复 LOAD_CONTEXT 在未 install 项目中查找不到 bridge.mjs 的问题。

@@ -177,14 +177,15 @@ test('OpenCode registers skills and agent without overwriting user settings', as
   const config = {};
   await plugin.config(config);
   assert.equal(config.skills.paths.length, 1);
-  assert.equal(config.agent.bridge_agent.mode, 'primary');
-  assert.match(config.agent.bridge_agent.prompt, /有效规范/);
+  assert.equal(config.agent["SDD-TDD 工作流"].mode, 'primary');
+  assert.equal(Object.hasOwn(config.agent, 'bridge_agent'), false);
+  assert.match(config.agent["SDD-TDD 工作流"].prompt, /有效规范/);
   const user = { agent: { bridge_agent: { prompt: 'user prompt', disable: true } } };
   await plugin.config(user);
   await plugin.config(user);
   assert.equal(user.skills.paths.length, 1);
-  assert.equal(user.agent.bridge_agent.prompt, 'user prompt');
-  assert.equal(user.agent.bridge_agent.disable, true);
+  assert.equal(user.agent["SDD-TDD 工作流"].prompt, 'user prompt');
+  assert.equal(user.agent["SDD-TDD 工作流"].disable, true);
 });
 
 test('reinstall works after uninstall without overwriting retained runtime files', t => {

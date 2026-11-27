@@ -124,8 +124,8 @@ test('audit R2: packaged artifact installs, validates and registers its agent', 
   const { SddTddBridgePlugin } = await import(pathToFileURL(path.join(root, '.opencode/plugins/sdd-tdd-bridge.js')));
   const config = {}; await (await SddTddBridgePlugin({})).config(config);
   assert.ok(fs.existsSync(path.join(config.skills.paths[0], 'bridge-load-context-skill/references/workflow.md')));
-  assert.match(config.agent.bridge_agent.prompt, /有效规范/);
-  assert.ok(config.agent.bridge_agent.prompt.includes(JSON.stringify(path.join(root, 'checks/bridge.mjs'))));
+  assert.match(config.agent["SDD-TDD 工作流"].prompt, /有效规范/);
+  assert.ok(config.agent["SDD-TDD 工作流"].prompt.includes(JSON.stringify(path.join(root, 'checks/bridge.mjs'))));
   assert.equal(JSON.parse(fs.readFileSync(path.join(root, 'templates/task-report.json'))).result, 'BLOCKED');
 });
 test('audit R2: WHEN cannot consume a THEN line as its value', t => {
